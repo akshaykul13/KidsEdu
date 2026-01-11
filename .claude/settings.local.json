@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcode-select:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(brew --version:*)",
+      "Bash(pod:*)",
+      "Bash(git --version)",
+      "Bash(code --list-extensions)",
+      "Bash(brew install:*)",
+      "Bash(flutter:*)",
+      "Bash(code --install-extension:*)",
+      "Bash(export PATH=\"$PATH:/opt/homebrew/Caskroom/flutter/latest/flutter/bin\")",
+      "Bash(export PATH=\"$PATH:/opt/homebrew/share/flutter/bin\")",
+      "Bash(xattr:*)",
+      "Bash(curl:*)",
+      "Bash(export PATH=\"$PATH:$HOME/flutter/bin\")",
+      "Bash(~/flutter/bin/flutter:*)",
+      "Bash(dart analyze:*)"
+    ]
+  }
+}

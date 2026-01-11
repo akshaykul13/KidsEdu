@@ -47,10 +47,10 @@ class SettingsService {
   /// Get speech rate value for TTS based on speed setting
   static double get speechRate {
     switch (speechSpeed) {
-      case 0: return 0.45;  // Slow - clear for young kids but not sluggish
-      case 1: return 0.52;  // Normal - lively pace
-      case 2: return 0.58;  // Fast - energetic
-      default: return 0.45;
+      case 0: return 0.5;   // Slow - still lively for kids
+      case 1: return 0.55;  // Normal - energetic pace
+      case 2: return 0.62;  // Fast - quick and exciting
+      default: return 0.5;
     }
   }
 }

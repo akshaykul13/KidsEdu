@@ -47,7 +47,7 @@ class AudioHelper {
     // Kid-friendly speech settings - use settings service rate
     await _tts.setSpeechRate(SettingsService.speechRate);
     await _tts.setVolume(1.0);
-    await _tts.setPitch(1.15);       // Slightly higher pitch for cheerful tone
+    await _tts.setPitch(1.25);       // Higher pitch for animated, cheerful tone
 
     _initialized = true;
   }
@@ -152,32 +152,32 @@ class AudioHelper {
     await speak(instruction);
   }
 
-  /// Speak success message (randomized, exciting for kids)
+  /// Speak success message (randomized, short and punchy for kids)
   static Future<void> speakSuccess() async {
     final messages = [
-      'Yay! Great job!',
-      'Woohoo! Awesome!',
-      'You got it! Amazing!',
-      'Yes! Perfect!',
-      'Wow! Well done!',
-      'Fantastic! You rock!',
-      'Super duper!',
-      'Brilliant! High five!',
-      'You are a star!',
-      'Hooray! Nailed it!',
+      'Yay!',
+      'Woohoo!',
+      'Yes!',
+      'Awesome!',
+      'Perfect!',
+      'Amazing!',
+      'Great!',
+      'Super!',
+      'Wow!',
+      'Nice!',
     ];
     final message = messages[DateTime.now().millisecond % messages.length];
     await speak(message);
   }
 
-  /// Speak try again message (gentle, encouraging)
+  /// Speak try again message (short, encouraging)
   static Future<void> speakTryAgain() async {
     final messages = [
       'Oops! Try again!',
-      'Almost there! One more try!',
-      'So close! Give it another go!',
-      'Not quite! You can do it!',
-      'Hmm, try once more!',
+      'Almost! Try again!',
+      'Not quite!',
+      'Try once more!',
+      'One more try!',
     ];
     final message = messages[DateTime.now().millisecond % messages.length];
     await speak(message);
@@ -185,7 +185,7 @@ class AudioHelper {
 
   /// Speak game complete
   static Future<void> speakGameComplete() async {
-    await speak('Woohoo! Amazing work! You are a superstar!');
+    await speak('Amazing! You did it!');
   }
 
   /// Speak a letter name (with phonetic clarity)

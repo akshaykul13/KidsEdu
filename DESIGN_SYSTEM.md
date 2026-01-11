@@ -70,10 +70,10 @@ Each color must have a **Base** and a **Shade** (the shadow underneath). This cr
 ### Category Colors
 | Category | Base | Shade | Usage |
 |----------|------|-------|-------|
-| Letters & Words | `#1CB0F6` | `#1899D6` | Literacy games |
-| Numbers | `#58CC02` | `#46A302` | Math games |
-| Games | `#FF9600` | `#E58700` | Puzzle games |
-| General Knowledge | `#CE82FF` | `#B066E0` | World learning |
+| ABC | `#1CB0F6` | `#1899D6` | Letters & reading games |
+| 123 | `#58CC02` | `#46A302` | Numbers & math games |
+| Puzzles | `#FF9600` | `#E58700` | Brain & logic games |
+| Discover | `#CE82FF` | `#B066E0` | World & learning games |
 
 ---
 

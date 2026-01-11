@@ -28,7 +28,7 @@ Educational games app for kids aged 4-6, built with Flutter for iPad deployment.
 
 ## Games Status (21 Total)
 
-### Letters & Words (5 Games)
+### ABC - Letters & Reading (5 Games)
 | Game | Status | Description |
 |------|--------|-------------|
 | Identify Letters | Complete | Tap the correct letter from options |
@@ -37,7 +37,7 @@ Educational games app for kids aged 4-6, built with Flutter for iPad deployment.
 | Write Letters | Complete | Trace and write ABC |
 | Write Words | Complete | Write simple words |
 
-### Numbers (5 Games)
+### 123 - Numbers & Math (5 Games)
 | Game | Status | Description |
 |------|--------|-------------|
 | Identify Numbers | Complete | Learn numbers 1-20 |
@@ -46,23 +46,23 @@ Educational games app for kids aged 4-6, built with Flutter for iPad deployment.
 | Higher/Lower | Complete | Compare number values |
 | Before/After | Complete | Number sequence ordering |
 
-### Games (7 Games)
+### Puzzles - Brain Games (5 Games)
 | Game | Status | Description |
 |------|--------|-------------|
 | Memory Match | Complete | Find matching pairs with illustrated icons |
 | Maze Adventure | Complete | Find path from A to B |
 | Find Hidden | Complete | Find Waldo-style game |
-| Odd One Out | Complete | Find the different item |
 | Spot the Difference | Complete | Find differences between images |
-| Color Sort | Complete | Sort items by color |
-| Big to Small | Complete | Size ordering game |
+| Odd One Out | Complete | Find the different item |
 
-### General Knowledge (4 Games)
+### Discover - World & Learning (6 Games)
 | Game | Status | Description |
 |------|--------|-------------|
-| Music Notes | Complete | Learn musical notes |
 | Country Flags | Complete | Learn 39 world flags with SVG graphics |
 | Calendar & Date | Complete | Learn days and months |
+| Music Notes | Complete | Learn musical notes |
+| Color Sort | Complete | Sort items by color |
+| Big to Small | Complete | Size ordering game |
 | Chore Tracker | Complete | Daily tasks chart |
 
 ---

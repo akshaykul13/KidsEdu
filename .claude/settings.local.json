@@ -16,7 +16,10 @@
       "Bash(curl:*)",
       "Bash(export PATH=\"$PATH:$HOME/flutter/bin\")",
       "Bash(~/flutter/bin/flutter:*)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

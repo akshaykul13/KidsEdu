@@ -4,7 +4,7 @@ Complete documentation of all 21 educational games organized by category.
 
 ---
 
-## Category 1: Letters & Words (Blue)
+## Category 1: ABC (Blue) - Letters & Reading
 
 Games focused on literacy skills including letter recognition, phonics, and word building.
 
@@ -96,7 +96,7 @@ Games focused on literacy skills including letter recognition, phonics, and word
 
 ---
 
-## Category 2: Numbers (Green)
+## Category 2: 123 (Green) - Numbers & Math
 
 Games focused on numeracy skills including number recognition, counting, and basic math.
 
@@ -188,9 +188,9 @@ Games focused on numeracy skills including number recognition, counting, and bas
 
 ---
 
-## Category 3: Games (Orange)
+## Category 3: Puzzles (Orange) - Brain Games
 
-Puzzle and logic games that develop cognitive skills.
+Puzzle and logic games that develop cognitive and visual skills.
 
 ### 3.1 Memory Match
 **File:** `lib/screens/games/memory_match_game.dart`
@@ -256,24 +256,7 @@ dog, cat, rabbit, fox, bear, penguin, lion, owl, elephant, monkey, fish, bird, t
 
 ---
 
-### 3.4 Odd One Out
-**File:** `lib/screens/games/odd_one_out_game.dart`
-
-**Description:** Identify the item that doesn't belong in a group.
-
-**Gameplay:**
-- Grid of items displayed
-- One item is different
-- Tap the odd one
-
-**Features:**
-- Pattern recognition
-- Category matching
-- Visual comparison
-
----
-
-### 3.5 Spot the Difference
+### 3.4 Spot the Difference
 **File:** `lib/screens/games/spot_the_difference_game.dart`
 
 **Description:** Find differences between two similar images.
@@ -290,63 +273,28 @@ dog, cat, rabbit, fox, bear, penguin, lion, owl, elephant, monkey, fish, bird, t
 
 ---
 
-### 3.6 Color Sort
-**File:** `lib/screens/games/color_sort_game.dart`
+### 3.5 Odd One Out
+**File:** `lib/screens/games/odd_one_out_game.dart`
 
-**Description:** Sort items by their colors into matching containers.
+**Description:** Identify the item that doesn't belong in a group.
 
 **Gameplay:**
-- Colored items displayed
-- Color containers at bottom
-- Drag items to matching colors
+- Grid of items displayed
+- One item is different
+- Tap the odd one
 
 **Features:**
-- Color recognition
-- Drag and drop
-- Multiple colors
+- Pattern recognition
+- Category matching
+- Visual comparison
 
 ---
 
-### 3.7 Big to Small
-**File:** `lib/screens/games/big_to_small_game.dart`
+## Category 4: Discover (Purple) - World & Learning
 
-**Description:** Arrange items in order from biggest to smallest (or smallest to biggest).
+Games focused on world knowledge, sorting skills, and life skills.
 
-**Gameplay:**
-- Items of different sizes displayed
-- Arrange in correct order
-- Complete to win
-
-**Features:**
-- Size comparison
-- Ordering skills
-- Visual feedback
-
----
-
-## Category 4: General Knowledge (Purple)
-
-Games focused on world learning, music, and life skills.
-
-### 4.1 Music Notes
-**File:** `lib/screens/games/music_notes_game.dart`
-
-**Description:** Learn musical notes and basic music theory.
-
-**Gameplay:**
-- Musical staff displayed
-- Notes shown and played
-- Identify the correct note
-
-**Features:**
-- Audio playback of notes
-- Visual musical staff
-- Note identification
-- Optional hints
-
----
-
-### 4.2 Country Flags
+### 4.1 Country Flags
 **File:** `lib/screens/games/flags_game.dart`
 
 **Description:** Learn world flags from 39 countries with high-quality SVG graphics.
@@ -379,7 +327,7 @@ Japan, France, Germany, Italy, Ireland, Poland, Ukraine, Indonesia, Bangladesh, 
 
 ---
 
-### 4.3 Calendar & Date
+### 4.2 Calendar & Date
 **File:** `lib/screens/games/calendar_game.dart`
 
 **Description:** Learn days of the week and months of the year.
@@ -397,7 +345,59 @@ Japan, France, Germany, Italy, Ireland, Poland, Ukraine, Indonesia, Bangladesh, 
 
 ---
 
-### 4.4 Chore Tracker
+### 4.3 Music Notes
+**File:** `lib/screens/games/music_notes_game.dart`
+
+**Description:** Learn musical notes and basic music theory.
+
+**Gameplay:**
+- Musical staff displayed
+- Notes shown and played
+- Identify the correct note
+
+**Features:**
+- Audio playback of notes
+- Visual musical staff
+- Note identification
+- Optional hints
+
+---
+
+### 4.4 Color Sort
+**File:** `lib/screens/games/color_sort_game.dart`
+
+**Description:** Sort items by their colors into matching containers.
+
+**Gameplay:**
+- Colored items displayed
+- Color containers at bottom
+- Drag items to matching colors
+
+**Features:**
+- Color recognition
+- Drag and drop
+- Multiple colors
+
+---
+
+### 4.5 Big to Small
+**File:** `lib/screens/games/big_to_small_game.dart`
+
+**Description:** Arrange items in order from biggest to smallest (or smallest to biggest).
+
+**Gameplay:**
+- Items of different sizes displayed
+- Arrange in correct order
+- Complete to win
+
+**Features:**
+- Size comparison
+- Ordering skills
+- Visual feedback
+
+---
+
+### 4.6 Chore Tracker
 **File:** `lib/screens/games/chore_tracker_game.dart`
 
 **Description:** Interactive daily task chart for building routines.
@@ -491,3 +491,14 @@ class _[Game]GameState extends State<[Game]Game> {
 | `HapticHelper.success()` | Correct answer |
 | `HapticHelper.error()` | Wrong answer |
 | `HapticHelper.celebration()` | Game complete |
+
+---
+
+## Category Summary
+
+| Category | Color | Emoji | Games | Focus |
+|----------|-------|-------|-------|-------|
+| ABC | Blue (#1CB0F6) | 📚 | 5 | Letters, phonics, words |
+| 123 | Green (#58CC02) | 🔢 | 5 | Numbers, math, counting |
+| Puzzles | Orange (#FF9600) | 🧩 | 5 | Memory, logic, visual |
+| Discover | Purple (#CE82FF) | 🌍 | 6 | World, sorting, life skills |

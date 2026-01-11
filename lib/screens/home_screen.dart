@@ -48,11 +48,11 @@ class HomeCategory {
   });
 }
 
-/// Categories with their games
+/// Categories with their games - Kid-friendly names for ages 4-6
 class Categories {
-  static const lettersAndWords = HomeCategory(
-    id: 'letters_words',
-    name: 'Letters & Words',
+  static const abc = HomeCategory(
+    id: 'abc',
+    name: 'ABC',
     emoji: '📚',
     baseColor: Color(0xFF1CB0F6),  // Blue
     shadeColor: Color(0xFF1899D6),
@@ -61,36 +61,36 @@ class Categories {
 
   static const numbers = HomeCategory(
     id: 'numbers',
-    name: 'Numbers',
+    name: '123',
     emoji: '🔢',
     baseColor: Color(0xFF58CC02),  // Green
     shadeColor: Color(0xFF46A302),
     gameIds: ['identify_numbers', 'math', 'write_numbers', 'higher_lower', 'before_after'],
   );
 
-  static const games = HomeCategory(
-    id: 'games',
-    name: 'Games',
-    emoji: '🎮',
+  static const puzzles = HomeCategory(
+    id: 'puzzles',
+    name: 'Puzzles',
+    emoji: '🧩',
     baseColor: Color(0xFFFF9600),  // Orange
     shadeColor: Color(0xFFE58700),
-    gameIds: ['maze', 'find_hidden', 'memory_match', 'odd_one_out', 'spot_difference', 'color_sort', 'big_to_small'],
+    gameIds: ['memory_match', 'maze', 'find_hidden', 'spot_difference', 'odd_one_out'],
   );
 
-  static const generalKnowledge = HomeCategory(
-    id: 'general_knowledge',
-    name: 'General Knowledge',
+  static const discover = HomeCategory(
+    id: 'discover',
+    name: 'Discover',
     emoji: '🌍',
     baseColor: Color(0xFFCE82FF),  // Purple
     shadeColor: Color(0xFFB066E0),
-    gameIds: ['music_notes', 'flags', 'calendar', 'chores'],
+    gameIds: ['flags', 'calendar', 'music_notes', 'color_sort', 'big_to_small', 'chores'],
   );
 
   static const List<HomeCategory> all = [
-    lettersAndWords,
+    abc,
     numbers,
-    games,
-    generalKnowledge,
+    puzzles,
+    discover,
   ];
 }
 

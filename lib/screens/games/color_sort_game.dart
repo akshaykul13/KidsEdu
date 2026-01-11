@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import 'dart:math';
 import '../../core/theme/app_theme.dart';
@@ -9,7 +10,7 @@ import '../../core/utils/haptic_helper.dart';
 import '../../widgets/navigation_buttons.dart';
 import '../../widgets/celebration_overlay.dart';
 
-/// Color Sort Game - Drag colored toys into matching colored bins
+/// Color Sort Game - Drag colored toys into matching colored baskets
 class ColorSortGame extends StatefulWidget {
   const ColorSortGame({super.key});
 
@@ -17,8 +18,9 @@ class ColorSortGame extends StatefulWidget {
   State<ColorSortGame> createState() => _ColorSortGameState();
 }
 
-class _ColorSortGameState extends State<ColorSortGame> {
+class _ColorSortGameState extends State<ColorSortGame> with TickerProviderStateMixin {
   late ConfettiController _confettiController;
+  late AnimationController _bounceController;
   final Random _random = Random();
 
   int _round = 0;
@@ -26,30 +28,91 @@ class _ColorSortGameState extends State<ColorSortGame> {
   int _score = 0;
   bool _isWaiting = false;
   List<_ColoredToy> _toys = [];
-  List<_ColorBin> _bins = [];
+  List<_ColorBasket> _baskets = [];
   int _sortedCount = 0;
   int _totalToysToSort = 0;
 
-  // Color definitions with kid-friendly names
-  static const List<Map<String, dynamic>> _colors = [
-    {'name': 'Red', 'color': Color(0xFFE74C3C), 'shade': Color(0xFFC0392B)},
-    {'name': 'Blue', 'color': Color(0xFF3498DB), 'shade': Color(0xFF2980B9)},
-    {'name': 'Green', 'color': Color(0xFF2ECC71), 'shade': Color(0xFF27AE60)},
-    {'name': 'Yellow', 'color': Color(0xFFF1C40F), 'shade': Color(0xFFD4AC0D)},
-    {'name': 'Purple', 'color': Color(0xFF9B59B6), 'shade': Color(0xFF8E44AD)},
-    {'name': 'Orange', 'color': Color(0xFFE67E22), 'shade': Color(0xFFD35400)},
-  ];
+  // Twemoji CDN base URL for high quality emoji images
+  static const String _twemojiBase = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
 
-  // Toy emojis that can be colored
-  static const List<String> _toyEmojis = [
-    '🧸', '🎈', '⭐', '❤️', '🔵', '🟢', '🟡', '🟣', '🟠', '🔴',
-    '🎀', '🎁', '🧩', '🎯', '🏀', '⚽', '🎾', '🧶', '🪀', '🎨',
+  // Color definitions with matching emoji toys
+  static const List<Map<String, dynamic>> _colors = [
+    {
+      'name': 'Red',
+      'color': Color(0xFFE74C3C),
+      'shade': Color(0xFFC0392B),
+      'light': Color(0xFFF5B7B1),
+      'toys': [
+        {'emoji': '❤️', 'code': '2764', 'name': 'heart'},
+        {'emoji': '🔴', 'code': '1f534', 'name': 'circle'},
+        {'emoji': '🍎', 'code': '1f34e', 'name': 'apple'},
+      ],
+    },
+    {
+      'name': 'Blue',
+      'color': Color(0xFF3498DB),
+      'shade': Color(0xFF2980B9),
+      'light': Color(0xFFAED6F1),
+      'toys': [
+        {'emoji': '💙', 'code': '1f499', 'name': 'heart'},
+        {'emoji': '🔵', 'code': '1f535', 'name': 'circle'},
+        {'emoji': '🐳', 'code': '1f433', 'name': 'whale'},
+      ],
+    },
+    {
+      'name': 'Green',
+      'color': Color(0xFF2ECC71),
+      'shade': Color(0xFF27AE60),
+      'light': Color(0xFFA9DFBF),
+      'toys': [
+        {'emoji': '💚', 'code': '1f49a', 'name': 'heart'},
+        {'emoji': '🟢', 'code': '1f7e2', 'name': 'circle'},
+        {'emoji': '🐸', 'code': '1f438', 'name': 'frog'},
+      ],
+    },
+    {
+      'name': 'Yellow',
+      'color': Color(0xFFF1C40F),
+      'shade': Color(0xFFD4AC0D),
+      'light': Color(0xFFF9E79F),
+      'toys': [
+        {'emoji': '💛', 'code': '1f49b', 'name': 'heart'},
+        {'emoji': '🟡', 'code': '1f7e1', 'name': 'circle'},
+        {'emoji': '⭐', 'code': '2b50', 'name': 'star'},
+      ],
+    },
+    {
+      'name': 'Purple',
+      'color': Color(0xFF9B59B6),
+      'shade': Color(0xFF8E44AD),
+      'light': Color(0xFFD7BDE2),
+      'toys': [
+        {'emoji': '💜', 'code': '1f49c', 'name': 'heart'},
+        {'emoji': '🟣', 'code': '1f7e3', 'name': 'circle'},
+        {'emoji': '🍇', 'code': '1f347', 'name': 'grapes'},
+      ],
+    },
+    {
+      'name': 'Orange',
+      'color': Color(0xFFE67E22),
+      'shade': Color(0xFFD35400),
+      'light': Color(0xFFF5CBA7),
+      'toys': [
+        {'emoji': '🧡', 'code': '1f9e1', 'name': 'heart'},
+        {'emoji': '🟠', 'code': '1f7e0', 'name': 'circle'},
+        {'emoji': '🍊', 'code': '1f34a', 'name': 'orange'},
+      ],
+    },
   ];
 
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    _bounceController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
     AudioHelper.init();
     _startNewRound();
   }
@@ -57,6 +120,7 @@ class _ColorSortGameState extends State<ColorSortGame> {
   @override
   void dispose() {
     _confettiController.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
@@ -66,34 +130,34 @@ class _ColorSortGameState extends State<ColorSortGame> {
       return;
     }
 
-    // Pick 3-4 colors for bins
+    // Pick 3 colors for baskets (fewer baskets = bigger baskets)
     final shuffledColors = List<Map<String, dynamic>>.from(_colors)..shuffle(_random);
-    final numBins = 3 + (_round ~/ 2).clamp(0, 1); // 3 bins for first 2 rounds, 4 for later
-    final selectedColors = shuffledColors.take(numBins).toList();
+    final selectedColors = shuffledColors.take(3).toList();
 
-    // Create bins
-    _bins = selectedColors.map((colorData) => _ColorBin(
+    // Create baskets
+    _baskets = selectedColors.map((colorData) => _ColorBasket(
       name: colorData['name'],
       color: colorData['color'],
       shadeColor: colorData['shade'],
+      lightColor: colorData['light'],
       toys: [],
     )).toList();
 
-    // Create toys (2 toys per bin color)
+    // Create toys (2 toys per basket color)
     _toys = [];
-    final toyEmojis = List<String>.from(_toyEmojis)..shuffle(_random);
-    int toyIndex = 0;
-
     for (final colorData in selectedColors) {
+      final toyOptions = List<Map<String, dynamic>>.from(colorData['toys'])..shuffle(_random);
       for (int i = 0; i < 2; i++) {
+        final toyData = toyOptions[i % toyOptions.length];
         _toys.add(_ColoredToy(
           id: _toys.length,
-          emoji: toyEmojis[toyIndex % toyEmojis.length],
+          emoji: toyData['emoji'],
+          emojiCode: toyData['code'],
+          toyName: toyData['name'],
           colorName: colorData['name'],
           color: colorData['color'],
           isSorted: false,
         ));
-        toyIndex++;
       }
     }
 
@@ -108,26 +172,26 @@ class _ColorSortGameState extends State<ColorSortGame> {
     });
 
     Future.delayed(const Duration(milliseconds: 500), () {
-      AudioHelper.speak("Sort the toys into the matching colored bins!");
+      AudioHelper.speak("Sort by color!");
     });
   }
 
-  void _onToyDroppedOnBin(int toyId, int binIndex) {
+  void _onToyDroppedOnBasket(int toyId, int basketIndex) {
     if (_isWaiting) return;
 
     final toyIndex = _toys.indexWhere((t) => t.id == toyId);
     if (toyIndex == -1) return;
 
     final toy = _toys[toyIndex];
-    final bin = _bins[binIndex];
+    final basket = _baskets[basketIndex];
 
-    if (toy.colorName == bin.name) {
-      // Correct bin!
+    if (toy.colorName == basket.name) {
+      // Correct basket!
       HapticHelper.success();
       setState(() {
         _toys[toyIndex] = toy.copyWith(isSorted: true);
-        _bins[binIndex] = bin.copyWith(
-          toys: [...bin.toys, toy],
+        _baskets[basketIndex] = basket.copyWith(
+          toys: [...basket.toys, toy],
         );
         _sortedCount++;
       });
@@ -142,12 +206,12 @@ class _ColorSortGameState extends State<ColorSortGame> {
         });
         Future.delayed(const Duration(milliseconds: 1500), _startNewRound);
       } else {
-        AudioHelper.speak("Good job!");
+        AudioHelper.speak("Yes!");
       }
     } else {
-      // Wrong bin
+      // Wrong basket
       HapticHelper.error();
-      AudioHelper.speak("Try the ${toy.colorName} bin!");
+      AudioHelper.speak("Try ${toy.colorName}!");
     }
   }
 
@@ -179,72 +243,109 @@ class _ColorSortGameState extends State<ColorSortGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE0F7FA), // Light cyan
+              Color(0xFFB2EBF2),
+              Color(0xFF80DEEA),
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Background decorations
+            Positioned(
+              top: 80,
+              left: 20,
+              child: _FloatingDecoration(emoji: '🌈', size: 60),
+            ),
+            Positioned(
+              top: 120,
+              right: 30,
+              child: _FloatingDecoration(emoji: '☁️', size: 50),
+            ),
+            Positioned(
+              bottom: 100,
+              left: 40,
+              child: _FloatingDecoration(emoji: '🎨', size: 45),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildAppBar(),
+                  const SizedBox(height: 16),
+                  // Instructions
+                  _buildInstructions(),
+                  const SizedBox(height: 20),
+                  // Toys area - BIG toys to drag
+                  Expanded(
+                    flex: 4,
+                    child: _buildToyArea(),
+                  ),
+                  // Baskets area - BIG baskets to drop into
+                  Expanded(
+                    flex: 5,
+                    child: _buildBasketArea(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+            CelebrationOverlay(controller: _confettiController),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstructions() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            offset: const Offset(0, 4),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SafeArea(
-            child: Column(
-              children: [
-                _buildAppBar(),
-                const SizedBox(height: 16),
-                // Instructions and progress
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary, width: 2),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.drag_indicator_rounded, color: AppColors.primary, size: 28),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Drag toys to matching bins!',
-                        style: GoogleFonts.nunito(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$_sortedCount/$_totalToysToSort',
-                          style: GoogleFonts.nunito(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Toys to sort
-                Expanded(
-                  flex: 2,
-                  child: _buildToyArea(),
-                ),
-                const SizedBox(height: 16),
-                // Color bins
-                Expanded(
-                  flex: 2,
-                  child: _buildBinArea(),
-                ),
-                const SizedBox(height: 16),
-              ],
+          const Text('👆', style: TextStyle(fontSize: 32)),
+          const SizedBox(width: 12),
+          Text(
+            'Drag to matching color!',
+            style: GoogleFonts.nunito(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
             ),
           ),
-          CelebrationOverlay(controller: _confettiController),
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.success,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              '$_sortedCount / $_totalToysToSort',
+              style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -254,58 +355,45 @@ class _ColorSortGameState extends State<ColorSortGame> {
     final unsortedToys = _toys.where((t) => !t.isSorted).toList();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.neutral, width: 2),
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 3),
       ),
-      child: Column(
-        children: [
-          Text(
-            'Toys',
-            style: GoogleFonts.nunito(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Center(
-              child: Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                alignment: WrapAlignment.center,
-                children: unsortedToys.map((toy) => _DraggableToy(
-                  toy: toy,
-                  onDragStarted: () => HapticHelper.lightTap(),
-                )).toList(),
-              ),
-            ),
-          ),
-        ],
+      child: Center(
+        child: Wrap(
+          spacing: 24,
+          runSpacing: 20,
+          alignment: WrapAlignment.center,
+          children: unsortedToys.map((toy) => _DraggableToyWidget(
+            toy: toy,
+            bounceController: _bounceController,
+            onDragStarted: () => HapticHelper.lightTap(),
+          )).toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildBinArea() {
+  Widget _buildBasketArea() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
-        children: _bins.asMap().entries.map((entry) {
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: _baskets.asMap().entries.map((entry) {
           final index = entry.key;
-          final bin = entry.value;
+          final basket = entry.value;
           return Expanded(
             child: Padding(
               padding: EdgeInsets.only(
                 left: index == 0 ? 0 : 8,
-                right: index == _bins.length - 1 ? 0 : 8,
+                right: index == _baskets.length - 1 ? 0 : 8,
               ),
-              child: _ColorBinWidget(
-                bin: bin,
-                onToyDropped: (toyId) => _onToyDroppedOnBin(toyId, index),
+              child: _BasketWidget(
+                basket: basket,
+                onToyDropped: (toyId) => _onToyDroppedOnBasket(toyId, index),
               ),
             ),
           );
@@ -316,7 +404,7 @@ class _ColorSortGameState extends State<ColorSortGame> {
 
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.attention,
         boxShadow: [
@@ -330,9 +418,9 @@ class _ColorSortGameState extends State<ColorSortGame> {
       child: Row(
         children: [
           const GameBackButton(),
-          const SizedBox(width: 24),
+          const SizedBox(width: 16),
           Text(
-            'Color Sort',
+            '🎨 Color Sort',
             style: GoogleFonts.nunito(
               fontSize: 28,
               fontWeight: FontWeight.w800,
@@ -355,7 +443,7 @@ class _ColorSortGameState extends State<ColorSortGame> {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -383,10 +471,28 @@ class _ColorSortGameState extends State<ColorSortGame> {
   }
 }
 
+/// Floating background decoration
+class _FloatingDecoration extends StatelessWidget {
+  final String emoji;
+  final double size;
+
+  const _FloatingDecoration({required this.emoji, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      emoji,
+      style: TextStyle(fontSize: size),
+    );
+  }
+}
+
 /// Data class for colored toys
 class _ColoredToy {
   final int id;
   final String emoji;
+  final String emojiCode;
+  final String toyName;
   final String colorName;
   final Color color;
   final bool isSorted;
@@ -394,15 +500,21 @@ class _ColoredToy {
   _ColoredToy({
     required this.id,
     required this.emoji,
+    required this.emojiCode,
+    required this.toyName,
     required this.colorName,
     required this.color,
     required this.isSorted,
   });
 
+  String get imageUrl => 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/$emojiCode.png';
+
   _ColoredToy copyWith({bool? isSorted}) {
     return _ColoredToy(
       id: id,
       emoji: emoji,
+      emojiCode: emojiCode,
+      toyName: toyName,
       colorName: colorName,
       color: color,
       isSorted: isSorted ?? this.isSorted,
@@ -410,106 +522,148 @@ class _ColoredToy {
   }
 }
 
-/// Data class for color bins
-class _ColorBin {
+/// Data class for color baskets
+class _ColorBasket {
   final String name;
   final Color color;
   final Color shadeColor;
+  final Color lightColor;
   final List<_ColoredToy> toys;
 
-  _ColorBin({
+  _ColorBasket({
     required this.name,
     required this.color,
     required this.shadeColor,
+    required this.lightColor,
     required this.toys,
   });
 
-  _ColorBin copyWith({List<_ColoredToy>? toys}) {
-    return _ColorBin(
+  _ColorBasket copyWith({List<_ColoredToy>? toys}) {
+    return _ColorBasket(
       name: name,
       color: color,
       shadeColor: shadeColor,
+      lightColor: lightColor,
       toys: toys ?? this.toys,
     );
   }
 }
 
-/// Draggable toy widget
-class _DraggableToy extends StatelessWidget {
+/// Draggable toy widget with network image
+class _DraggableToyWidget extends StatelessWidget {
   final _ColoredToy toy;
+  final AnimationController bounceController;
   final VoidCallback onDragStarted;
 
-  const _DraggableToy({
+  const _DraggableToyWidget({
     required this.toy,
+    required this.bounceController,
     required this.onDragStarted,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Draggable<int>(
-      data: toy.id,
-      onDragStarted: onDragStarted,
-      feedback: Material(
-        color: Colors.transparent,
-        child: Transform.scale(
-          scale: 1.2,
-          child: _buildToyContent(isDragging: true),
-        ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _buildToyContent(),
-      ),
-      child: _buildToyContent(),
+    return AnimatedBuilder(
+      animation: bounceController,
+      builder: (context, child) {
+        final phase = (toy.id * 0.4) % 1.0;
+        final bounceValue = sin((bounceController.value + phase) * 2 * pi);
+        final translateY = bounceValue * 6;
+        final scale = 1.0 + bounceValue * 0.05;
+
+        return Transform.translate(
+          offset: Offset(0, translateY),
+          child: Transform.scale(
+            scale: scale,
+            child: Draggable<int>(
+              data: toy.id,
+              onDragStarted: onDragStarted,
+              feedback: Material(
+                color: Colors.transparent,
+                child: _ToyImage(toy: toy, size: 120, isDragging: true),
+              ),
+              childWhenDragging: Opacity(
+                opacity: 0.3,
+                child: _ToyImage(toy: toy, size: 100),
+              ),
+              child: _ToyImage(toy: toy, size: 100),
+            ),
+          ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildToyContent({bool isDragging = false}) {
+/// Toy image widget using network image with fallback
+class _ToyImage extends StatelessWidget {
+  final _ColoredToy toy;
+  final double size;
+  final bool isDragging;
+
+  const _ToyImage({
+    required this.toy,
+    required this.size,
+    this.isDragging = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: 80,
-      height: 80,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: toy.color,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: toy.color,
+          width: 4,
+        ),
         boxShadow: [
           BoxShadow(
             color: isDragging
                 ? toy.color.withValues(alpha: 0.5)
-                : Colors.black.withValues(alpha: 0.2),
-            offset: const Offset(0, 4),
-            blurRadius: isDragging ? 12 : 4,
+                : Colors.black.withValues(alpha: 0.15),
+            offset: const Offset(0, 6),
+            blurRadius: isDragging ? 16 : 8,
           ),
         ],
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.5),
-          width: 3,
-        ),
       ),
-      child: Center(
-        child: Text(
-          toy.emoji,
-          style: const TextStyle(fontSize: 40),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: CachedNetworkImage(
+            imageUrl: toy.imageUrl,
+            fit: BoxFit.contain,
+            placeholder: (context, url) => Center(
+              child: Text(toy.emoji, style: TextStyle(fontSize: size * 0.5)),
+            ),
+            errorWidget: (context, url, error) => Center(
+              child: Text(toy.emoji, style: TextStyle(fontSize: size * 0.5)),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// Color bin widget with drag target
-class _ColorBinWidget extends StatefulWidget {
-  final _ColorBin bin;
+/// Basket widget with drag target
+class _BasketWidget extends StatefulWidget {
+  final _ColorBasket basket;
   final Function(int) onToyDropped;
 
-  const _ColorBinWidget({
-    required this.bin,
+  const _BasketWidget({
+    required this.basket,
     required this.onToyDropped,
   });
 
   @override
-  State<_ColorBinWidget> createState() => _ColorBinWidgetState();
+  State<_BasketWidget> createState() => _BasketWidgetState();
 }
 
-class _ColorBinWidgetState extends State<_ColorBinWidget> {
+class _BasketWidgetState extends State<_BasketWidget> {
   bool _isHovering = false;
 
   @override
@@ -528,79 +682,99 @@ class _ColorBinWidgetState extends State<_ColorBinWidget> {
       },
       builder: (context, candidateData, rejectedData) {
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: _isHovering
-                ? widget.bin.color.withValues(alpha: 0.3)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: widget.bin.color,
-              width: _isHovering ? 4 : 3,
-            ),
-            boxShadow: _isHovering
-                ? [
-                    BoxShadow(
-                      color: widget.bin.color.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
-          ),
+          duration: const Duration(milliseconds: 150),
+          transform: Matrix4.identity()..scale(_isHovering ? 1.05 : 1.0),
+          transformAlignment: Alignment.center,
           child: Column(
             children: [
-              // Bin label
+              // Color label at top
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
-                  color: widget.bin.color,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(17),
-                    topRight: Radius.circular(17),
-                  ),
+                  color: widget.basket.color,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.basket.shadeColor,
+                      offset: const Offset(0, 4),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Text(
-                  widget.bin.name,
+                  widget.basket.name,
                   style: GoogleFonts.nunito(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
-              // Bin content
+              const SizedBox(height: 12),
+              // Basket body
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: widget.bin.toys.isEmpty
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        widget.basket.lightColor,
+                        widget.basket.color.withValues(alpha: 0.3),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: _isHovering ? widget.basket.color : widget.basket.color.withValues(alpha: 0.5),
+                      width: _isHovering ? 5 : 3,
+                    ),
+                    boxShadow: _isHovering
+                        ? [
+                            BoxShadow(
+                              color: widget.basket.color.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                            ),
+                          ],
+                  ),
+                  child: widget.basket.toys.isEmpty
                       ? Center(
-                          child: Icon(
-                            Icons.inbox_rounded,
-                            size: 48,
-                            color: widget.bin.color.withValues(alpha: 0.3),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.arrow_downward_rounded,
+                                size: 48,
+                                color: widget.basket.color.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Drop here!',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: widget.basket.color.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
                           ),
                         )
-                      : Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          alignment: WrapAlignment.center,
-                          children: widget.bin.toys.map((toy) => Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: toy.color.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                toy.emoji,
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ),
-                          )).toList(),
+                      : Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: widget.basket.toys.map((toy) => _SmallToyImage(toy: toy)).toList(),
+                          ),
                         ),
                 ),
               ),
@@ -608,6 +782,49 @@ class _ColorBinWidgetState extends State<_ColorBinWidget> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Small toy image for inside baskets - BIGGER than before
+class _SmallToyImage extends StatelessWidget {
+  final _ColoredToy toy;
+
+  const _SmallToyImage({required this.toy});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 65,
+      height: 65,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: toy.color, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            offset: const Offset(0, 2),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: CachedNetworkImage(
+            imageUrl: toy.imageUrl,
+            fit: BoxFit.contain,
+            placeholder: (context, url) => Center(
+              child: Text(toy.emoji, style: const TextStyle(fontSize: 32)),
+            ),
+            errorWidget: (context, url, error) => Center(
+              child: Text(toy.emoji, style: const TextStyle(fontSize: 32)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

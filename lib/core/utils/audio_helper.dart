@@ -1,8 +1,10 @@
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:io';
 import 'settings_service.dart';
+import 'elevenlabs_service.dart';
 
-/// Audio helper for text-to-speech using Apple's Premium Voices
+/// Audio helper for text-to-speech
+/// Uses ElevenLabs when enabled, falls back to device TTS
 class AudioHelper {
   static final FlutterTts _tts = FlutterTts();
   static bool _initialized = false;
@@ -136,14 +138,22 @@ class AudioHelper {
   /// Get current voice name (for debugging/settings)
   static String? get currentVoice => _currentVoice;
 
-  /// Speak text
+  /// Speak text - tries ElevenLabs first, falls back to device TTS
   static Future<void> speak(String text) async {
+    // Try ElevenLabs first if enabled
+    if (ElevenLabsService.isAvailable) {
+      final success = await ElevenLabsService.speak(text);
+      if (success) return;
+    }
+
+    // Fallback to device TTS
     await init();
     await _tts.speak(text);
   }
 
   /// Stop speaking
   static Future<void> stop() async {
+    await ElevenLabsService.stop();
     await _tts.stop();
   }
 

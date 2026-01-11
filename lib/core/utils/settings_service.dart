@@ -5,6 +5,8 @@ class SettingsService {
   static const String _hintsEnabledKey = 'hints_enabled';
   static const String _soundEnabledKey = 'sound_enabled';
   static const String _speechSpeedKey = 'speech_speed';
+  static const String _elevenLabsEnabledKey = 'elevenlabs_enabled';
+  static const String _elevenLabsApiKeyKey = 'elevenlabs_api_key';
 
   static SharedPreferences? _prefs;
 
@@ -42,6 +44,26 @@ class SettingsService {
   /// Set speech speed setting
   static Future<void> setSpeechSpeed(int value) async {
     await _prefs?.setInt(_speechSpeedKey, value);
+  }
+
+  /// Get ElevenLabs enabled setting (default: false)
+  static bool get elevenLabsEnabled {
+    return _prefs?.getBool(_elevenLabsEnabledKey) ?? false;
+  }
+
+  /// Set ElevenLabs enabled setting
+  static Future<void> setElevenLabsEnabled(bool value) async {
+    await _prefs?.setBool(_elevenLabsEnabledKey, value);
+  }
+
+  /// Get ElevenLabs API key
+  static String get elevenLabsApiKey {
+    return _prefs?.getString(_elevenLabsApiKeyKey) ?? '';
+  }
+
+  /// Set ElevenLabs API key
+  static Future<void> setElevenLabsApiKey(String value) async {
+    await _prefs?.setString(_elevenLabsApiKeyKey, value);
   }
 
   /// Get speech rate value for TTS based on speed setting

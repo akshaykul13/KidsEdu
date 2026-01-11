@@ -418,11 +418,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showParentalGate() {
-    showDialog(
+  void _showParentalGate() async {
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => _ParentalGateDialog(),
     );
+
+    if (result == true && mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => const _SettingsDialog(),
+      );
+    }
   }
 }
 
@@ -788,6 +795,12 @@ class _ParentalGateDialogState extends State<_ParentalGateDialog> {
   String? _error;
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -844,12 +857,8 @@ class _ParentalGateDialogState extends State<_ParentalGateDialog> {
   void _checkAnswer() {
     final answer = int.tryParse(_controller.text);
     if (answer == _num1 + _num2) {
-      Navigator.pop(context);
-      // Show settings dialog
-      showDialog(
-        context: context,
-        builder: (context) => const _SettingsDialog(),
-      );
+      // Pop with result to signal success
+      Navigator.of(context).pop(true);
     } else {
       setState(() => _error = 'Try again');
     }
@@ -868,6 +877,16 @@ class _SettingsDialogState extends State<_SettingsDialog> {
   bool _hintsEnabled = SettingsService.hintsEnabled;
   bool _soundEnabled = SettingsService.soundEnabled;
   int _speechSpeed = SettingsService.speechSpeed;
+  bool _elevenLabsEnabled = SettingsService.elevenLabsEnabled;
+  final TextEditingController _apiKeyController = TextEditingController(
+    text: SettingsService.elevenLabsApiKey,
+  );
+
+  @override
+  void dispose() {
+    _apiKeyController.dispose();
+    super.dispose();
+  }
 
   String get _speechSpeedLabel {
     switch (_speechSpeed) {
@@ -882,65 +901,158 @@ class _SettingsDialogState extends State<_SettingsDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '⚙️ Settings',
-              style: GoogleFonts.nunito(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '⚙️ Settings',
+                style: GoogleFonts.nunito(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            // Speech Speed
-            _SpeechSpeedTile(
-              value: _speechSpeed,
-              label: _speechSpeedLabel,
-              onChanged: (value) async {
-                setState(() => _speechSpeed = value);
-                await SettingsService.setSpeechSpeed(value);
-                await AudioHelper.updateSpeechRate();
-                // Test the new speed
-                AudioHelper.speak('This is how I sound now');
-              },
-            ),
-            const SizedBox(height: 16),
-            // Hints toggle
-            _SettingsTile(
-              icon: Icons.lightbulb_outline,
-              title: 'Hints',
-              subtitle: 'Show hints after a few seconds',
-              value: _hintsEnabled,
-              onChanged: (value) async {
-                setState(() => _hintsEnabled = value);
-                await SettingsService.setHintsEnabled(value);
-              },
-            ),
-            const SizedBox(height: 16),
-            // Sound toggle
-            _SettingsTile(
-              icon: Icons.volume_up_rounded,
-              title: 'Sound',
-              subtitle: 'Voice prompts and sounds',
-              value: _soundEnabled,
-              onChanged: (value) async {
-                setState(() => _soundEnabled = value);
-                await SettingsService.setSoundEnabled(value);
-              },
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton.primary(
-                text: 'DONE',
-                onTap: () => Navigator.pop(context),
+              const SizedBox(height: 32),
+              // Speech Speed
+              _SpeechSpeedTile(
+                value: _speechSpeed,
+                label: _speechSpeedLabel,
+                onChanged: (value) async {
+                  setState(() => _speechSpeed = value);
+                  await SettingsService.setSpeechSpeed(value);
+                  await AudioHelper.updateSpeechRate();
+                  // Test the new speed
+                  AudioHelper.speak('This is how I sound now');
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              // Hints toggle
+              _SettingsTile(
+                icon: Icons.lightbulb_outline,
+                title: 'Hints',
+                subtitle: 'Show hints after a few seconds',
+                value: _hintsEnabled,
+                onChanged: (value) async {
+                  setState(() => _hintsEnabled = value);
+                  await SettingsService.setHintsEnabled(value);
+                },
+              ),
+              const SizedBox(height: 16),
+              // Sound toggle
+              _SettingsTile(
+                icon: Icons.volume_up_rounded,
+                title: 'Sound',
+                subtitle: 'Voice prompts and sounds',
+                value: _soundEnabled,
+                onChanged: (value) async {
+                  setState(() => _soundEnabled = value);
+                  await SettingsService.setSoundEnabled(value);
+                },
+              ),
+              const SizedBox(height: 24),
+              // ElevenLabs section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.auto_awesome, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Premium Voice',
+                          style: GoogleFonts.nunito(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Use ElevenLabs for natural AI voices',
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Enable Premium Voice',
+                            style: GoogleFonts.nunito(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Switch(
+                          value: _elevenLabsEnabled,
+                          activeColor: AppColors.primary,
+                          onChanged: (value) async {
+                            setState(() => _elevenLabsEnabled = value);
+                            await SettingsService.setElevenLabsEnabled(value);
+                            if (value) {
+                              AudioHelper.speak('Premium voice activated!');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    if (_elevenLabsEnabled) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _apiKeyController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: 'API Key',
+                          hintText: 'Enter your ElevenLabs API key',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: (value) async {
+                          await SettingsService.setElevenLabsApiKey(value);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Get your free API key at elevenlabs.io',
+                        style: GoogleFonts.nunito(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: DuoButton.primary(
+                  text: 'DONE',
+                  onTap: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

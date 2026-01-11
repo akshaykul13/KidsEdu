@@ -6,6 +6,7 @@ import 'dart:math';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/haptic_helper.dart';
+import '../../core/utils/illustrated_icons.dart';
 import '../../widgets/navigation_buttons.dart';
 import '../../widgets/celebration_overlay.dart';
 
@@ -31,18 +32,25 @@ class _BigToSmallGameState extends State<BigToSmallGame> {
   Timer? _hintTimer;
   int? _hintSlotIndex;
 
-  // Item themes with emojis
+  // Item themes with illustrated icons
   static const List<Map<String, dynamic>> _itemThemes = [
-    {'emoji': '🐻', 'name': 'bears', 'color': Color(0xFF8B4513)},
-    {'emoji': '⭐', 'name': 'stars', 'color': Color(0xFFFFD700)},
-    {'emoji': '🎈', 'name': 'balloons', 'color': Color(0xFFFF6B6B)},
-    {'emoji': '🌸', 'name': 'flowers', 'color': Color(0xFFFF69B4)},
-    {'emoji': '🐟', 'name': 'fish', 'color': Color(0xFF4FC3F7)},
-    {'emoji': '🍎', 'name': 'apples', 'color': Color(0xFFE74C3C)},
-    {'emoji': '🦋', 'name': 'butterflies', 'color': Color(0xFF9B59B6)},
-    {'emoji': '🐢', 'name': 'turtles', 'color': Color(0xFF27AE60)},
-    {'emoji': '🌙', 'name': 'moons', 'color': Color(0xFFF39C12)},
-    {'emoji': '❤️', 'name': 'hearts', 'color': Color(0xFFE91E63)},
+    {'iconId': 'bear', 'name': 'bears', 'color': Color(0xFF795548)},
+    {'iconId': 'star', 'name': 'stars', 'color': Color(0xFFFFD700)},
+    {'iconId': 'heart', 'name': 'hearts', 'color': Color(0xFFE91E63)},
+    {'iconId': 'flower', 'name': 'flowers', 'color': Color(0xFFFF69B4)},
+    {'iconId': 'fish', 'name': 'fish', 'color': Color(0xFF4FC3F7)},
+    {'iconId': 'butterfly', 'name': 'butterflies', 'color': Color(0xFF9B59B6)},
+    {'iconId': 'turtle', 'name': 'turtles', 'color': Color(0xFF27AE60)},
+    {'iconId': 'moon', 'name': 'moons', 'color': Color(0xFFF39C12)},
+    {'iconId': 'sun', 'name': 'suns', 'color': Color(0xFFFF9800)},
+    {'iconId': 'cat', 'name': 'cats', 'color': Color(0xFFFF9800)},
+    {'iconId': 'dog', 'name': 'dogs', 'color': Color(0xFF8D6E63)},
+    {'iconId': 'rabbit', 'name': 'rabbits', 'color': Color(0xFFE91E63)},
+    {'iconId': 'owl', 'name': 'owls', 'color': Color(0xFF9C27B0)},
+    {'iconId': 'penguin', 'name': 'penguins', 'color': Color(0xFF37474F)},
+    {'iconId': 'bird', 'name': 'birds', 'color': Color(0xFF2196F3)},
+    {'iconId': 'elephant', 'name': 'elephants', 'color': Color(0xFF78909C)},
+    {'iconId': 'lion', 'name': 'lions', 'color': Color(0xFFFFC107)},
   ];
 
   // Sizes from smallest to largest
@@ -85,7 +93,7 @@ class _BigToSmallGameState extends State<BigToSmallGame> {
     for (int i = 0; i < 5; i++) {
       _items.add(_SizedItem(
         id: i,
-        emoji: _currentTheme!['emoji'],
+        iconId: _currentTheme!['iconId'],
         size: _sizes[i],
         sizeLabel: _sizeLabels[i],
         correctPosition: _sortSmallestFirst ? i : (4 - i),
@@ -469,14 +477,14 @@ class _BigToSmallGameState extends State<BigToSmallGame> {
 /// Data class for sized items
 class _SizedItem {
   final int id;
-  final String emoji;
+  final String iconId;
   final double size;
   final String sizeLabel;
   final int correctPosition;
 
   _SizedItem({
     required this.id,
-    required this.emoji,
+    required this.iconId,
     required this.size,
     required this.sizeLabel,
     required this.correctPosition,
@@ -497,7 +505,7 @@ class _DraggableItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseSize = 60.0;
+    final baseSize = 70.0;
     final actualSize = baseSize * item.size;
 
     return Draggable<int>(
@@ -520,10 +528,10 @@ class _DraggableItem extends StatelessWidget {
 
   Widget _buildContent(double size, {bool isDragging = false}) {
     return Container(
-      width: size + 20,
-      height: size + 20,
+      width: size + 24,
+      height: size + 24,
       decoration: BoxDecoration(
-        color: themeColor.withValues(alpha: 0.2),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: themeColor,
@@ -537,12 +545,18 @@ class _DraggableItem extends StatelessWidget {
                   spreadRadius: 2,
                 ),
               ]
-            : null,
+            : [
+                BoxShadow(
+                  color: themeColor.withValues(alpha: 0.3),
+                  offset: const Offset(0, 4),
+                  blurRadius: 0,
+                ),
+              ],
       ),
       child: Center(
-        child: Text(
-          item.emoji,
-          style: TextStyle(fontSize: size * 0.8),
+        child: IllustratedIcon(
+          iconId: item.iconId,
+          size: size,
         ),
       ),
     );
@@ -576,19 +590,19 @@ class _SlotWidgetState extends State<_SlotWidget> {
   Widget build(BuildContext context) {
     if (widget.item != null) {
       // Show placed item
-      final baseSize = 50.0;
+      final baseSize = 55.0;
       final actualSize = baseSize * widget.item!.size;
 
       return Container(
         decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.2),
+          color: AppColors.success.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.success, width: 3),
         ),
         child: Center(
-          child: Text(
-            widget.item!.emoji,
-            style: TextStyle(fontSize: actualSize * 0.7),
+          child: IllustratedIcon(
+            iconId: widget.item!.iconId,
+            size: actualSize,
           ),
         ),
       );

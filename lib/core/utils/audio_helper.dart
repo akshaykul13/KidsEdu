@@ -9,11 +9,14 @@ class AudioHelper {
   static String? _currentVoice;
 
   // Preferred voices for kids app (in order of preference)
-  // These are Apple's premium/enhanced on-device voices
+  // These are Apple's premium/enhanced on-device voices - cheerful and clear
   static const List<String> _preferredVoices = [
-    'Samantha',      // Enhanced - warm, clear, motherly (best for kids)
+    'Samantha',      // Enhanced - warm, clear, friendly (best for kids)
+    'Nicky',         // Premium - warm, upbeat voice
+    'Allison',       // Neural - very natural sounding
+    'Ava',           // Neural - clear and friendly
     'Zoe',           // Premium - clear and friendly
-    'Nicky',         // Premium - warm voice
+    'Tom',           // Premium - friendly male option
     'Alex',          // Premium - natural
     'Fiona',         // Premium - clear British
     'Karen',         // Premium - Australian
@@ -44,7 +47,7 @@ class AudioHelper {
     // Kid-friendly speech settings - use settings service rate
     await _tts.setSpeechRate(SettingsService.speechRate);
     await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);        // Natural pitch for clarity
+    await _tts.setPitch(1.15);       // Slightly higher pitch for cheerful tone
 
     _initialized = true;
   }
@@ -149,16 +152,19 @@ class AudioHelper {
     await speak(instruction);
   }
 
-  /// Speak success message (randomized)
+  /// Speak success message (randomized, exciting for kids)
   static Future<void> speakSuccess() async {
     final messages = [
-      'Great job!',
-      'Awesome!',
-      'You got it!',
-      'Perfect!',
-      'Well done!',
-      'Amazing!',
-      'Super!',
+      'Yay! Great job!',
+      'Woohoo! Awesome!',
+      'You got it! Amazing!',
+      'Yes! Perfect!',
+      'Wow! Well done!',
+      'Fantastic! You rock!',
+      'Super duper!',
+      'Brilliant! High five!',
+      'You are a star!',
+      'Hooray! Nailed it!',
     ];
     final message = messages[DateTime.now().millisecond % messages.length];
     await speak(message);
@@ -167,10 +173,11 @@ class AudioHelper {
   /// Speak try again message (gentle, encouraging)
   static Future<void> speakTryAgain() async {
     final messages = [
-      'Try again!',
-      'Almost! Try once more.',
-      'Not quite. Try again!',
-      'Keep trying!',
+      'Oops! Try again!',
+      'Almost there! One more try!',
+      'So close! Give it another go!',
+      'Not quite! You can do it!',
+      'Hmm, try once more!',
     ];
     final message = messages[DateTime.now().millisecond % messages.length];
     await speak(message);
@@ -178,7 +185,7 @@ class AudioHelper {
 
   /// Speak game complete
   static Future<void> speakGameComplete() async {
-    await speak('Amazing work! You are a superstar!');
+    await speak('Woohoo! Amazing work! You are a superstar!');
   }
 
   /// Speak a letter name (with phonetic clarity)

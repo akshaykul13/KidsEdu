@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// Illustrated icons for games - custom drawn for consistent visual style
@@ -404,13 +405,13 @@ class _IconPainter extends CustomPainter {
     for (int i = 0; i < points * 2; i++) {
       final r = i.isEven ? radius : radius * innerRadius;
       final angle = (i * 3.14159 / points) - (3.14159 / 2);
-      final x = center.dx + r * (i == 0 ? 0 : (i.isEven ? 1 : 1)) * (i == 0 ? 0 : (angle < 0 ? -1 : 1)) * r * 0 + r * (angle).cos;
-      final y = center.dy + r * (angle).sin;
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
       if (i == 0) {
         path.moveTo(center.dx, center.dy - radius);
       }
       final a = (i * 3.14159 / points) - (3.14159 / 2);
-      path.lineTo(center.dx + r * a.cos, center.dy + r * a.sin);
+      path.lineTo(center.dx + r * cos(a), center.dy + r * sin(a));
     }
     path.close();
     canvas.drawPath(path, paint);
@@ -432,7 +433,7 @@ class _IconPainter extends CustomPainter {
     // Petals
     for (int i = 0; i < 5; i++) {
       final angle = (i * 3.14159 * 2 / 5) - (3.14159 / 2);
-      final petalCenter = Offset(center.dx + radius * 0.5 * angle.cos, center.dy + radius * 0.5 * angle.sin);
+      final petalCenter = Offset(center.dx + radius * 0.5 * cos(angle), center.dy + radius * 0.5 * sin(angle));
       canvas.drawCircle(petalCenter, radius * 0.4, primary);
     }
     // Center
@@ -443,8 +444,8 @@ class _IconPainter extends CustomPainter {
     // Rays
     for (int i = 0; i < 8; i++) {
       final angle = i * 3.14159 / 4;
-      final start = Offset(center.dx + radius * 0.6 * angle.cos, center.dy + radius * 0.6 * angle.sin);
-      final end = Offset(center.dx + radius * 1.1 * angle.cos, center.dy + radius * 1.1 * angle.sin);
+      final start = Offset(center.dx + radius * 0.6 * cos(angle), center.dy + radius * 0.6 * sin(angle));
+      final end = Offset(center.dx + radius * 1.1 * cos(angle), center.dy + radius * 1.1 * sin(angle));
       canvas.drawLine(start, end, Paint()..color = primary.color..strokeWidth = radius * 0.15..strokeCap = StrokeCap.round);
     }
     // Circle

@@ -16,8 +16,12 @@ For kids, readability is about weight and character. Use **Nunito** (available o
 | Element | Font Weight | Size (pt) | Color | Use Case |
 |---------|-------------|-----------|-------|----------|
 | Heading L | Black (900) | 28pt | `#4B4B4B` | Unit Titles, Success Screen |
+| Game Title | Black (900) | 32pt | `#4B4B4B` | Game headers |
+| Game Prompt | Bold (700) | 24pt | `#4B4B4B` | Instructions |
 | Body M | Bold (700) | 18pt | `#777777` | Instructions, Dialogues |
 | Button Text | ExtraBold (800) | 16pt | `#FFFFFF` | "CONTINUE", "START" |
+| Answer Option | ExtraBold (800) | 28pt | `#FFFFFF` | Game answer buttons |
+| Game Letter | Black (900) | 48pt | `#4B4B4B` | Large letter display |
 | Micro Text | Bold (700) | 14pt | `#AFAFAF` | Progress labels, tooltips |
 
 ### Font Implementation
@@ -43,55 +47,83 @@ Text(
 
 Each color must have a **Base** and a **Shade** (the shadow underneath). This creates the characteristic Duolingo "chunky button" look.
 
-| Category | Base Color | Shade Color (4px Bottom) | Visual Purpose |
-|----------|------------|--------------------------|----------------|
+### Primary Colors
+| Category | Base Color | Shade Color | Visual Purpose |
+|----------|------------|-------------|----------------|
 | Primary | `#1CB0F6` (Blue) | `#1899D6` | Brand, Path Nodes, Info |
 | Success | `#58CC02` (Green) | `#46A302` | Correct, Continue, Progress |
 | Attention | `#FFC800` (Yellow) | `#E5A400` | Review, Gold Levels, Stars |
 | Energy | `#FF9600` (Orange) | `#E58700` | Streaks, Special Nodes |
 | Error | `#FF4B4B` (Red) | `#D33131` | Mistakes, Try Again |
 | Neutral | `#E5E5E5` (Gray) | `#AFB4BD` | Locked Levels, Troughs |
+| Purple | `#CE82FF` | `#B066E0` | General Knowledge category |
 
-### Additional UI Colors
+### UI Colors
 | Name | Hex | Usage |
 |------|-----|-------|
 | Background | `#FFFFFF` | Main app background |
+| Surface | `#FFFFFF` | Card backgrounds |
 | Text Primary | `#4B4B4B` | Headlines, important text |
 | Text Secondary | `#777777` | Instructions, body text |
 | Text Muted | `#AFAFAF` | Tooltips, labels |
+
+### Category Colors
+| Category | Base | Shade | Usage |
+|----------|------|-------|-------|
+| Letters & Words | `#1CB0F6` | `#1899D6` | Literacy games |
+| Numbers | `#58CC02` | `#46A302` | Math games |
+| Games | `#FF9600` | `#E58700` | Puzzle games |
+| General Knowledge | `#CE82FF` | `#B066E0` | World learning |
 
 ---
 
 ## 3. Core UI Components
 
-### A. The "Duo" Button (Standard & Wide)
+### A. The "Duo" Button (3D Press Effect)
 
 The signature Duolingo button with a 3D press effect.
 
 **Structure:**
 - A `Stack` with two layers: the shadow (shade color) and the top button (base color)
-- Corner Radius: **16pt**
-- Shadow Height: **4pt** (visible at bottom when not pressed)
+- Corner Radius: **16-24pt** (depending on size)
+- Shadow Height: **4-8pt** (visible at bottom when not pressed)
 - Padding: **16pt horizontal, 12pt vertical**
 
 **Interaction:**
-- On `TouchDown`: Top layer moves down 4pt, shadow disappears
+- On `TouchDown`: Top layer moves down, shadow disappears
 - On `TouchUp`: Top layer returns to original position
+- Duration: **100ms** with `easeOut` curve
 
 ```dart
-class DuoButton extends StatefulWidget {
-  final String text;
-  final Color baseColor;
-  final Color shadeColor;
-  final VoidCallback onTap;
-
-  // ... implementation
-}
-
-// The 3D effect is created by:
-// 1. Bottom container (shade) with full height
-// 2. Top container (base) positioned 4pt above bottom
-// 3. On press, top moves down 4pt to meet bottom
+// Standard 3D button structure
+Stack(
+  children: [
+    // Shadow layer
+    Positioned(
+      left: 0, right: 0, bottom: 0,
+      child: Container(
+        height: buttonHeight,
+        decoration: BoxDecoration(
+          color: shadeColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    ),
+    // Face layer (animated)
+    AnimatedPositioned(
+      duration: Duration(milliseconds: 100),
+      top: isPressed ? 4 : 0,
+      child: Container(
+        height: buttonHeight,
+        decoration: BoxDecoration(
+          color: baseColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: content,
+      ),
+    ),
+  ],
+)
 ```
 
 ### B. The Progress Bar (Lesson Top)
@@ -111,97 +143,196 @@ class DuoButton extends StatefulWidget {
 - Runs across the top of the green fill
 - Creates a 3D glass look
 
+### C. Game Card (Answer Tiles)
+
+Used for letter/number selection in games.
+
+**Dimensions:** 120-150pt square
+**Border Radius:** 20-24pt
+**Shadow Offset:** 6-8pt
+
+**States:**
+| State | Background | Border |
+|-------|------------|--------|
+| Default | Tile color | None |
+| Hinting | Pulsing glow | Attention color |
+| Correct | Success green | 4pt Success |
+| Wrong | Error red | 4pt Error |
+
+### D. Flag Card (Country Flags Game)
+
+Displays SVG flags with 3D card effect.
+
+**Dimensions:** 220x170pt
+**Border Radius:** 24pt
+**Shadow Offset:** 8pt
+
 ```dart
-Stack(
-  children: [
-    // Trough
-    Container(height: 16, decoration: BoxDecoration(
-      color: Color(0xFFE5E5E5),
-      borderRadius: BorderRadius.circular(8),
-    )),
-    // Fill
-    FractionallySizedBox(
-      widthFactor: progress,
-      child: Container(
-        height: 16,
-        decoration: BoxDecoration(
-          color: Color(0xFF58CC02),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: // Shine overlay
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-              ),
-            ),
+// Flag card structure
+SizedBox(
+  width: 220,
+  height: 170,
+  child: Stack(
+    children: [
+      // Shadow
+      Positioned(
+        left: 0, right: 0, bottom: 0, top: 8,
+        child: Container(
+          decoration: BoxDecoration(
+            color: shadeColor,
+            borderRadius: BorderRadius.circular(24),
           ),
+        ),
       ),
-    ),
-  ],
+      // Face with flag
+      AnimatedPositioned(
+        top: isPressed ? 8 : 0,
+        bottom: isPressed ? 0 : 8,
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor, width: 4),
+          ),
+          child: FlagWidget(countryCode: code, size: 90),
+        ),
+      ),
+    ],
+  ),
 )
 ```
 
-### C. The Learning Path Node
+---
 
-**Shape:** Circle, usually **80x80pt**
+## 4. Custom Graphics
 
-**Active Node:**
-- Has the Shade Color underneath (4pt offset)
-- Small white "highlight" arc on top (shine effect)
+### A. Illustrated Icons
 
-**Progress Ring:**
-- A circular border around the node
-- Fills from 0% to 100% as sub-levels are completed
-- Stroke width: **4pt**
+Custom vector icons drawn with `CustomPaint` for consistent visual style.
+
+**Available Icons (20):**
+| Animals | Nature/Shapes |
+|---------|---------------|
+| cat, dog, rabbit, bear | star, heart, flower |
+| fox, owl, elephant, lion | sun, moon, cloud |
+| monkey, penguin, fish, bird | |
+| turtle, butterfly | |
+
+**Usage:**
+```dart
+IllustratedIcon(
+  iconId: 'cat',
+  size: 60,
+  backgroundColor: Colors.orange.withOpacity(0.1),
+)
+```
+
+**Implementation:**
+- Each icon is drawn programmatically using `CustomPaint`
+- Primary and accent colors for each icon
+- Fallback to emoji if icon not found
+
+### B. Flag Widget
+
+SVG-based country flags with emoji fallback.
+
+**Countries with SVG Flags (18):**
+Japan, France, Germany, Italy, Ireland, Poland, Ukraine, Indonesia, Bangladesh, Switzerland, Sweden, Greece, Thailand, Nigeria, Peru, Chile, Turkey, Vietnam
+
+**Countries with Emoji Fallback (21):**
+US, GB, CA, ES, CN, IN, BR, AU, MX, KR, RU, PK, IL, AR, PT, JM, NZ, ZA, EG, KE, CU
+
+**Usage:**
+```dart
+FlagWidget(
+  countryCode: 'JP',  // ISO 3166-1 alpha-2 code
+  size: 80,
+)
+```
 
 ---
 
-## 4. Screen Layout Specs (iOS Safe Areas)
+## 5. Settings Dialog
 
-### The Home Path Screen
+The settings dialog follows the chunky 3D aesthetic.
 
-**Header:**
-- Floating "Status Bar" showing Star Count and Unit Name
-- Background: Transparent or matching the Unit theme
+### Settings Available
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| Hints | Toggle | Off | Show hint animations |
+| Sound | Toggle | On | Enable TTS and sounds |
+| Voice Speed | 3-way | Slow | Speech rate control |
 
-**The Path:**
-- Use a `ScrollView`
-- Nodes staggered in an **"S-curve"** pattern: Center → Right-ish → Center → Left-ish
-- Vertical spacing: **32pt** between nodes
+### Voice Speed Options
+| Speed | Label | TTS Rate | Icon |
+|-------|-------|----------|------|
+| Slow | Best for learning | 0.3 | Turtle |
+| Normal | Standard pace | 0.4 | Walking |
+| Fast | Quick review | 0.5 | Running |
 
-**Layout Example:**
+### Settings Tile Design
+```dart
+// Toggle setting tile
+Container(
+  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+  decoration: BoxDecoration(
+    color: isEnabled ? color.withOpacity(0.1) : AppColors.neutral,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: isEnabled ? color : AppColors.neutralShade,
+      width: 3,
+    ),
+  ),
+  child: Row(
+    children: [
+      Icon(icon, color: isEnabled ? color : AppColors.textMuted),
+      Text(label),
+      Spacer(),
+      Switch(value: isEnabled, onChanged: onChanged),
+    ],
+  ),
+)
 ```
-       [Node 1]
-              [Node 2]
-       [Node 3]
-  [Node 4]
-       [Node 5]
-```
 
-### The Lesson Screen
+---
+
+## 6. Screen Layout Specs (iOS Safe Areas)
+
+### The Home Screen
 
 **Top Bar:**
-- Exit (X) icon on the **left**
-- Progress Bar in the **middle**
-- Height: Respects safe area
+- Star count display
+- Settings gear icon
+
+**Hero Area:**
+- Mascot illustration
+- Speech bubble with greeting
+- TTS: "Hi there! Ready to play?"
+
+**Category Grid:**
+- 2x2 grid of category cards
+- Each card: 3D button with emoji + name
+- Tap navigates to game list
+
+### The Game Screen
+
+**Top Bar:**
+- Back button (88pt touch target)
+- Game title
+- Round/Score indicators
 
 **Content Area:**
-- Large central area for game mechanics
-- Contains images, cards, answer options
+- Game-specific content
+- Large central elements
+- Answer options
 
-**Bottom Interaction Zone:**
-- Permanent white footer (`#FFFFFF`)
-- **2pt top border** (`#E5E5E5`)
-- Contains "Check" or "Continue" button
-- Button centered, full width with padding
+**Celebration Layer:**
+- Confetti overlay on success
+- Game complete dialog
 
 ---
 
-## 5. UX Patterns for Incremental Complexity
+## 7. UX Patterns for Incremental Complexity
 
 To build games that get harder without overwhelming the child, use these **Progression Toggles**:
 
@@ -220,7 +351,7 @@ To build games that get harder without overwhelming the child, use these **Progr
 
 ---
 
-## 6. Motion & Sound (The "Juice")
+## 8. Motion & Sound (The "Juice")
 
 A game feels "premium" when it reacts to the user. These micro-interactions are essential.
 
@@ -229,30 +360,19 @@ A game feels "premium" when it reacts to the user. These micro-interactions are 
 When a correct answer is chosen:
 1. Object scales to **1.2x**
 2. Returns to **1.0x**
-3. Total duration: **0.2 seconds**
+3. Total duration: **200ms**
 4. Easing: `Curves.elasticOut`
-
-```dart
-// Pop animation controller
-AnimatedScale(
-  scale: isCorrect ? 1.2 : 1.0,
-  duration: Duration(milliseconds: 200),
-  curve: Curves.elasticOut,
-  child: answerWidget,
-)
-```
 
 ### Haptic Feedback
 
-| Action | iOS Implementation | Description |
-|--------|-------------------|-------------|
-| Success | `UIImpactFeedbackGenerator(style: .light)` — tap **twice rapidly** | Light double-tap feel |
-| Error | `UINotificationFeedbackGenerator().notificationOccurred(.error)` | Gentle buzz |
-| Button Tap | `UIImpactFeedbackGenerator(style: .light)` | Single light tap |
-| Achievement | `UIImpactFeedbackGenerator(style: .medium)` | Stronger confirmation |
+| Action | Implementation | Description |
+|--------|----------------|-------------|
+| Success | Double light tap | Two quick taps |
+| Error | Heavy impact | Gentle buzz |
+| Button Tap | Light impact | Single tap |
+| Celebration | Medium impact | Stronger confirmation |
 
 ```dart
-// Flutter implementation
 class HapticHelper {
   static void success() async {
     await HapticFeedback.lightImpact();
@@ -260,28 +380,37 @@ class HapticHelper {
     await HapticFeedback.lightImpact();
   }
 
-  static void error() {
-    HapticFeedback.heavyImpact(); // Simulates notification error
-  }
-
-  static void lightTap() {
-    HapticFeedback.lightImpact();
-  }
+  static void error() => HapticFeedback.heavyImpact();
+  static void lightTap() => HapticFeedback.lightImpact();
+  static void celebration() => HapticFeedback.mediumImpact();
 }
 ```
 
-### Audio Cues
+### Audio/TTS Settings
 
-| Event | Sound | Characteristics |
-|-------|-------|-----------------|
-| Success | Rising major-scale "Ding!" | Bright, celebratory, ~0.5s |
-| Failure | Soft, low-pitched "Bloop" | Never a loud buzzer, gentle |
-| Button tap | Soft click | Subtle, not distracting |
-| Level complete | Fanfare | Short celebration, ~1s |
+```dart
+// TTS Configuration
+await _tts.setSpeechRate(SettingsService.speechRate);
+await _tts.setPitch(1.0);  // Natural pitch
+await _tts.setVolume(1.0);
+
+// iOS-specific audio settings
+await _tts.setIosAudioCategory(
+  IosTextToSpeechAudioCategory.playback,
+  [
+    IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+    IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+  ],
+  IosTextToSpeechAudioMode.voicePrompt,
+);
+
+// Preferred voices (clearer for kids)
+['Samantha', 'Zoe', 'Nicky', 'Alex', 'Karen']
+```
 
 ---
 
-## 7. Touch Targets
+## 9. Touch Targets
 
 **Minimum size: 88x88 points** (larger than Apple's 44pt for adults)
 
@@ -291,64 +420,72 @@ class HapticHelper {
 | Duo Buttons | 100-120pt height |
 | Navigation icons | 88pt minimum |
 | Path nodes | 80pt diameter |
+| Flag cards | 220x170pt |
+| Memory cards | Responsive (min 60pt) |
 
 ---
 
-## 8. Animation Timing Reference
+## 10. Animation Timing Reference
 
 | Animation Type | Duration | Easing |
 |----------------|----------|--------|
 | Button press (3D effect) | 100ms | `easeOut` |
 | Pop effect (correct answer) | 200ms | `elasticOut` |
 | Progress bar fill | 300ms | `easeInOut` |
-| Confetti burst | 1.5-2s | Linear |
+| Confetti burst | 2s | Linear |
 | Screen transition | 300ms | `easeInOut` |
 | Hint pulse | 500ms | Repeating |
 | Error shake | 300ms | `easeInOut` |
+| Card flip | 300ms | `easeInOut` |
 
 ---
 
-## 9. Component Checklist for New Games
+## 11. Component Checklist for New Games
 
 Before shipping a new game, verify:
 
-- [ ] Uses DuoButton with 3D press effect
-- [ ] Progress bar has shine effect
+- [ ] Uses 3D button with press effect
 - [ ] Pop animation on correct answers
 - [ ] Double-tap haptic on success
 - [ ] Gentle error haptic (not harsh buzz)
-- [ ] Rising "ding" sound on success
-- [ ] Soft "bloop" on errors
-- [ ] Touch targets ≥ 88pt
+- [ ] Voice prompt using TTS
+- [ ] Touch targets >= 88pt
 - [ ] Nunito font throughout
 - [ ] Colors match 3D palette (base + shade)
-- [ ] Exit button in top-left
-- [ ] Progress shown in top bar
+- [ ] Back button in top-left
+- [ ] Round/Score display
+- [ ] Confetti on game complete
+- [ ] Respects hints setting
+- [ ] Works in landscape orientation
 
 ---
 
-## 10. File Structure Reference
+## 12. File Structure Reference
 
 ```
 lib/
 ├── core/
 │   ├── theme/
-│   │   └── app_theme.dart      # 3D Color palette, typography
+│   │   └── app_theme.dart         # 3D Color palette, typography
 │   ├── constants/
-│   │   └── game_data.dart      # Game definitions
+│   │   └── game_data.dart         # Game definitions
 │   └── utils/
-│       ├── audio_helper.dart   # TTS + sound effects
-│       └── haptic_helper.dart  # Duolingo-style haptics
+│       ├── audio_helper.dart      # TTS + sound effects
+│       ├── haptic_helper.dart     # Duolingo-style haptics
+│       ├── settings_service.dart  # App settings
+│       ├── flag_widget.dart       # SVG flag renderer
+│       └── illustrated_icons.dart # Custom vector icons
 ├── widgets/
-│   ├── duo_button.dart         # 3D press button
-│   ├── duo_progress_bar.dart   # Progress bar with shine
-│   ├── game_app_bar.dart       # Lesson top bar
-│   ├── answer_tile.dart        # 3D answer button
-│   ├── celebration_overlay.dart # Confetti + success
-│   ├── path_node.dart          # Home screen path nodes
-│   └── navigation_buttons.dart  # Back/Exit buttons
+│   ├── duo_button.dart            # 3D press button
+│   ├── duo_progress_bar.dart      # Progress bar with shine
+│   ├── game_app_bar.dart          # Lesson top bar
+│   ├── answer_tile.dart           # 3D answer button
+│   ├── celebration_overlay.dart   # Confetti + success
+│   ├── navigation_buttons.dart    # Back/Exit buttons
+│   ├── path_node.dart             # Home screen path nodes
+│   └── success_drawer.dart        # Success animations
 ├── screens/
-│   ├── home_screen.dart
+│   ├── home_screen.dart           # Category navigation
 │   └── games/
-│       └── [game_name]_game.dart
+│       └── [game_name]_game.dart  # Individual games
 ```

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:async';
 import 'dart:math';
 import '../../core/theme/app_theme.dart';
@@ -9,6 +11,30 @@ import '../../core/utils/settings_service.dart';
 import '../../widgets/navigation_buttons.dart';
 import '../../widgets/answer_tile.dart';
 import '../../widgets/celebration_overlay.dart';
+
+/// Difficulty levels for Math game
+enum MathDifficulty {
+  easy(
+    name: 'Easy',
+    description: 'Add numbers 1-5',
+    maxNumber: 5,
+  ),
+  medium(
+    name: 'Medium',
+    description: 'Add numbers 1-10',
+    maxNumber: 10,
+  );
+
+  final String name;
+  final String description;
+  final int maxNumber;
+
+  const MathDifficulty({
+    required this.name,
+    required this.description,
+    required this.maxNumber,
+  });
+}
 
 /// Basic Math Game - Simple addition
 class MathGame extends StatefulWidget {
@@ -22,6 +48,7 @@ class _MathGameState extends State<MathGame> {
   final Random _random = Random();
   late ConfettiController _confettiController;
 
+  MathDifficulty? _difficulty;
   int _num1 = 0;
   int _num2 = 0;
   int _answer = 0;
@@ -35,12 +62,13 @@ class _MathGameState extends State<MathGame> {
   bool _showHint = false;
   Timer? _hintTimer;
 
+  int get _maxNumber => _difficulty?.maxNumber ?? 5;
+
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     AudioHelper.init();
-    _startNewRound();
   }
 
   @override
@@ -48,6 +76,14 @@ class _MathGameState extends State<MathGame> {
     _hintTimer?.cancel();
     _confettiController.dispose();
     super.dispose();
+  }
+
+  void _selectDifficulty(MathDifficulty difficulty) {
+    HapticHelper.lightTap();
+    setState(() {
+      _difficulty = difficulty;
+    });
+    _startNewRound();
   }
 
   void _startHintTimer() {
@@ -74,9 +110,9 @@ class _MathGameState extends State<MathGame> {
       _isWaiting = false;
     });
 
-    // Generate simple addition (1-10 + 1-10)
-    _num1 = _random.nextInt(10) + 1;
-    _num2 = _random.nextInt(10) + 1;
+    // Generate addition based on difficulty
+    _num1 = _random.nextInt(_maxNumber) + 1;
+    _num2 = _random.nextInt(_maxNumber) + 1;
     _answer = _num1 + _num2;
 
     // Create options: correct answer + 3 wrong
@@ -171,6 +207,10 @@ class _MathGameState extends State<MathGame> {
 
   @override
   Widget build(BuildContext context) {
+    if (_difficulty == null) {
+      return _buildDifficultySelector();
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -288,6 +328,87 @@ class _MathGameState extends State<MathGame> {
     );
   }
 
+  Widget _buildDifficultySelector() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              color: AppColors.success,
+              child: Row(
+                children: [
+                  const GameBackButton(),
+                  const SizedBox(width: 24),
+                  Text(
+                    'Basic Math',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        '➕',
+                        style: TextStyle(fontSize: 80),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Choose Difficulty',
+                        style: GoogleFonts.nunito(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      _DifficultyButton(
+                        title: 'Easy',
+                        subtitle: 'Add numbers 1-5',
+                        emoji: '🌟',
+                        color: AppColors.success,
+                        shadeColor: AppColors.successShade,
+                        onTap: () => _selectDifficulty(MathDifficulty.easy),
+                      )
+                          .animate()
+                          .fadeIn(delay: 100.ms, duration: 400.ms)
+                          .slideX(begin: -0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                      const SizedBox(height: 16),
+                      _DifficultyButton(
+                        title: 'Medium',
+                        subtitle: 'Add numbers 1-10',
+                        emoji: '🧩',
+                        color: AppColors.attention,
+                        shadeColor: AppColors.attentionShade,
+                        onTap: () => _selectDifficulty(MathDifficulty.medium),
+                      )
+                          .animate()
+                          .fadeIn(delay: 200.ms, duration: 400.ms)
+                          .slideX(begin: 0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -296,12 +417,38 @@ class _MathGameState extends State<MathGame> {
         children: [
           const GameBackButton(),
           const SizedBox(width: 24),
-          const Text('Basic Math', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(
+            'Basic Math',
+            style: GoogleFonts.nunito(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Difficulty badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _difficulty == MathDifficulty.easy
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : AppColors.attention,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _difficulty?.name ?? '',
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(24)),
-            child: Text('Round $_round/$_totalRounds', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
+            child: Text('Round $_round/$_totalRounds', style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
           ),
           const SizedBox(width: 20),
           Container(
@@ -311,11 +458,116 @@ class _MathGameState extends State<MathGame> {
               children: [
                 const Text('⭐', style: TextStyle(fontSize: 24)),
                 const SizedBox(width: 8),
-                Text('$_score', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                Text('$_score', style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Difficulty selection button
+class _DifficultyButton extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final String emoji;
+  final Color color;
+  final Color shadeColor;
+  final VoidCallback onTap;
+
+  const _DifficultyButton({
+    required this.title,
+    required this.subtitle,
+    required this.emoji,
+    required this.color,
+    required this.shadeColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_DifficultyButton> createState() => _DifficultyButtonState();
+}
+
+class _DifficultyButtonState extends State<_DifficultyButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: SizedBox(
+        width: 320,
+        height: 90,
+        child: Stack(
+          children: [
+            // Shadow
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 84,
+                decoration: BoxDecoration(
+                  color: widget.shadeColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            // Face
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 100),
+              left: 0,
+              right: 0,
+              top: _isPressed ? 6 : 0,
+              child: Container(
+                height: 84,
+                decoration: BoxDecoration(
+                  color: widget.color,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.emoji,
+                      style: const TextStyle(fontSize: 36),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: GoogleFonts.nunito(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle,
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

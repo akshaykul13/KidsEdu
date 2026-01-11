@@ -455,8 +455,8 @@ class _BackButtonState extends State<_BackButton> {
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: SizedBox(
-        width: 52,
-        height: 56,
+        width: 88,
+        height: 92,
         child: Stack(
           children: [
             Positioned(
@@ -464,10 +464,10 @@ class _BackButtonState extends State<_BackButton> {
               left: 0,
               right: 0,
               child: Container(
-                height: 52,
+                height: 88,
                 decoration: BoxDecoration(
                   color: AppColors.neutralShade,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                 ),
               ),
             ),
@@ -477,14 +477,14 @@ class _BackButtonState extends State<_BackButton> {
               left: 0,
               right: 0,
               child: Container(
-                height: 52,
+                height: 88,
                 decoration: BoxDecoration(
                   color: AppColors.neutral,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                 ),
                 child: const Icon(
                   Icons.arrow_back_rounded,
-                  size: 28,
+                  size: 44,
                   color: AppColors.textSecondary,
                 ),
               ),

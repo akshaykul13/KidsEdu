@@ -138,12 +138,14 @@ class AudioHelper {
   /// Get current voice name (for debugging/settings)
   static String? get currentVoice => _currentVoice;
 
-  /// Speak text - tries ElevenLabs first, falls back to device TTS
+  /// Speak text - tries ElevenLabs first if enabled, otherwise uses device TTS
   static Future<void> speak(String text) async {
     // Try ElevenLabs first if enabled
     if (ElevenLabsService.isAvailable) {
       final success = await ElevenLabsService.speak(text);
-      if (success) return;
+      if (success) {
+        return;
+      }
     }
 
     // Fallback to device TTS

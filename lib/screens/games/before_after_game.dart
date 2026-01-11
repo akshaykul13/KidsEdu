@@ -1,12 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/haptic_helper.dart';
 import '../../widgets/navigation_buttons.dart';
 import '../../widgets/celebration_overlay.dart';
+
+/// Difficulty levels for Before/After game
+enum BeforeAfterDifficulty {
+  easy(
+    name: 'Easy',
+    description: 'Numbers 1-10',
+    maxNumber: 10,
+  ),
+  medium(
+    name: 'Medium',
+    description: 'Numbers 1-20',
+    maxNumber: 20,
+  ),
+  hard(
+    name: 'Hard',
+    description: 'Numbers 1-30',
+    maxNumber: 30,
+  );
+
+  final String name;
+  final String description;
+  final int maxNumber;
+
+  const BeforeAfterDifficulty({
+    required this.name,
+    required this.description,
+    required this.maxNumber,
+  });
+}
 
 /// Before/After Game - Build numbers using digit tiles
 class BeforeAfterGame extends StatefulWidget {
@@ -20,6 +50,7 @@ class _BeforeAfterGameState extends State<BeforeAfterGame> {
   late ConfettiController _confettiController;
   final Random _random = Random();
 
+  BeforeAfterDifficulty? _difficulty;
   int _round = 0;
   final int _totalRounds = 10;
   int _score = 0;
@@ -30,18 +61,27 @@ class _BeforeAfterGameState extends State<BeforeAfterGame> {
   bool _showError = false;
   bool _isWaiting = false;
 
+  int get _maxNumber => _difficulty?.maxNumber ?? 10;
+
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     AudioHelper.init();
-    _startNewRound();
   }
 
   @override
   void dispose() {
     _confettiController.dispose();
     super.dispose();
+  }
+
+  void _selectDifficulty(BeforeAfterDifficulty difficulty) {
+    HapticHelper.lightTap();
+    setState(() {
+      _difficulty = difficulty;
+    });
+    _startNewRound();
   }
 
   void _startNewRound() {
@@ -58,13 +98,13 @@ class _BeforeAfterGameState extends State<BeforeAfterGame> {
       _isWaiting = false;
     });
 
-    // Generate target number 2-30 for "before" or 1-29 for "after"
+    // Generate target number based on difficulty
     if (_random.nextBool()) {
       _askBefore = true;
-      _targetNumber = _random.nextInt(29) + 2; // 2-30 (so answer is 1-29)
+      _targetNumber = _random.nextInt(_maxNumber - 1) + 2; // 2 to maxNumber (so answer is 1 to maxNumber-1)
     } else {
       _askBefore = false;
-      _targetNumber = _random.nextInt(29) + 1; // 1-29 (so answer is 2-30)
+      _targetNumber = _random.nextInt(_maxNumber - 1) + 1; // 1 to maxNumber-1 (so answer is 2 to maxNumber)
     }
 
     setState(() {});
@@ -164,6 +204,10 @@ class _BeforeAfterGameState extends State<BeforeAfterGame> {
 
   @override
   Widget build(BuildContext context) {
+    if (_difficulty == null) {
+      return _buildDifficultySelector();
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -336,6 +380,108 @@ class _BeforeAfterGameState extends State<BeforeAfterGame> {
     );
   }
 
+  Widget _buildDifficultySelector() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryShade,
+                    offset: const Offset(0, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const GameBackButton(),
+                  const SizedBox(width: 24),
+                  Text(
+                    'Before & After',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        '🔢',
+                        style: TextStyle(fontSize: 80),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Choose Difficulty',
+                        style: GoogleFonts.nunito(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      _DifficultyButton(
+                        title: 'Easy',
+                        subtitle: 'Numbers 1-10',
+                        emoji: '🌟',
+                        color: AppColors.success,
+                        shadeColor: AppColors.successShade,
+                        onTap: () => _selectDifficulty(BeforeAfterDifficulty.easy),
+                      )
+                          .animate()
+                          .fadeIn(delay: 100.ms, duration: 400.ms)
+                          .slideX(begin: -0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                      const SizedBox(height: 16),
+                      _DifficultyButton(
+                        title: 'Medium',
+                        subtitle: 'Numbers 1-20',
+                        emoji: '🧩',
+                        color: AppColors.attention,
+                        shadeColor: AppColors.attentionShade,
+                        onTap: () => _selectDifficulty(BeforeAfterDifficulty.medium),
+                      )
+                          .animate()
+                          .fadeIn(delay: 200.ms, duration: 400.ms)
+                          .slideX(begin: 0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                      const SizedBox(height: 16),
+                      _DifficultyButton(
+                        title: 'Hard',
+                        subtitle: 'Numbers 1-30',
+                        emoji: '🧠',
+                        color: AppColors.error,
+                        shadeColor: AppColors.errorShade,
+                        onTap: () => _selectDifficulty(BeforeAfterDifficulty.hard),
+                      )
+                          .animate()
+                          .fadeIn(delay: 300.ms, duration: 400.ms)
+                          .slideX(begin: -0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -359,6 +505,27 @@ class _BeforeAfterGameState extends State<BeforeAfterGame> {
               fontSize: 28,
               fontWeight: FontWeight.w800,
               color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Difficulty badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _difficulty == BeforeAfterDifficulty.easy
+                  ? AppColors.success
+                  : _difficulty == BeforeAfterDifficulty.medium
+                      ? AppColors.attention
+                      : AppColors.error,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _difficulty?.name ?? '',
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
           const Spacer(),
@@ -553,6 +720,111 @@ class _ActionTileState extends State<_ActionTile> {
                     size: 36,
                     color: Colors.white,
                   ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Difficulty selection button
+class _DifficultyButton extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final String emoji;
+  final Color color;
+  final Color shadeColor;
+  final VoidCallback onTap;
+
+  const _DifficultyButton({
+    required this.title,
+    required this.subtitle,
+    required this.emoji,
+    required this.color,
+    required this.shadeColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_DifficultyButton> createState() => _DifficultyButtonState();
+}
+
+class _DifficultyButtonState extends State<_DifficultyButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: SizedBox(
+        width: 320,
+        height: 90,
+        child: Stack(
+          children: [
+            // Shadow
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 84,
+                decoration: BoxDecoration(
+                  color: widget.shadeColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            // Face
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 100),
+              left: 0,
+              right: 0,
+              top: _isPressed ? 6 : 0,
+              child: Container(
+                height: 84,
+                decoration: BoxDecoration(
+                  color: widget.color,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.emoji,
+                      style: const TextStyle(fontSize: 36),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: GoogleFonts.nunito(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle,
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),

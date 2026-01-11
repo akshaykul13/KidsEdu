@@ -49,10 +49,14 @@ class ElevenLabsService {
   /// Speak text using ElevenLabs
   /// Returns true if successful, false if should fallback to device TTS
   static Future<bool> speak(String text, {String? voiceId}) async {
-    if (!isAvailable) return false;
+    if (!isAvailable) {
+      return false;
+    }
 
     await init();
-    if (!_initialized) return false;
+    if (!_initialized) {
+      return false;
+    }
 
     try {
       // Check cache first
@@ -64,7 +68,9 @@ class ElevenLabsService {
 
       // Fetch from API
       final audioData = await _fetchAudio(text, voiceId ?? _defaultVoiceId);
-      if (audioData == null) return false;
+      if (audioData == null) {
+        return false;
+      }
 
       // Cache it
       final file = await _cacheAudio(text, audioData);
@@ -80,7 +86,9 @@ class ElevenLabsService {
   /// Fetch audio from ElevenLabs API
   static Future<List<int>?> _fetchAudio(String text, String voiceId) async {
     final apiKey = SettingsService.elevenLabsApiKey;
-    if (apiKey.isEmpty) return null;
+    if (apiKey.isEmpty) {
+      return null;
+    }
 
     try {
       final response = await http.post(
@@ -92,12 +100,10 @@ class ElevenLabsService {
         },
         body: jsonEncode({
           'text': text,
-          'model_id': 'eleven_monolingual_v1',
+          'model_id': 'eleven_turbo_v2_5',
           'voice_settings': {
             'stability': 0.5,
             'similarity_boost': 0.75,
-            'style': 0.5,
-            'use_speaker_boost': true,
           },
         }),
       ).timeout(const Duration(seconds: 10));

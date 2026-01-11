@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:async';
 import 'dart:math';
 import '../../core/theme/app_theme.dart';
@@ -314,16 +315,15 @@ class _OddOneOutGameState extends State<OddOneOutGame> {
       });
       Future.delayed(const Duration(milliseconds: 1500), _startNewRound);
     } else {
-      // Wrong - show correct answer after a moment
+      // Wrong - let user try again
       HapticHelper.error();
       AudioHelper.speakTryAgain();
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {
           setState(() {
-            _selectedIndex = _oddIndex; // Highlight correct answer
-            _isWaiting = true;
+            _selectedIndex = null; // Clear selection so user can try again
           });
-          Future.delayed(const Duration(milliseconds: 1500), _startNewRound);
+          _startHintTimer(); // Restart hint timer
         }
       });
     }
@@ -403,6 +403,7 @@ class _OddOneOutGameState extends State<OddOneOutGame> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 48),
                       child: LayoutBuilder(
+                        key: ValueKey('round_$_round'),
                         builder: (context, constraints) {
                           final availableWidth = constraints.maxWidth;
                           final availableHeight = constraints.maxHeight;
@@ -417,6 +418,9 @@ class _OddOneOutGameState extends State<OddOneOutGame> {
                             runSpacing: 24,
                             alignment: WrapAlignment.center,
                             children: List.generate(_items.length, (index) {
+                              // Staggered entrance delay based on position
+                              final delay = Duration(milliseconds: 100 * index);
+
                               return _ItemCard(
                                 item: _items[index],
                                 size: itemSize,
@@ -425,7 +429,15 @@ class _OddOneOutGameState extends State<OddOneOutGame> {
                                 isWrong: _selectedIndex == index && index != _oddIndex,
                                 isHinted: _showHint && index == _oddIndex,
                                 onTap: () => _onItemTap(index),
-                              );
+                              )
+                                  .animate(delay: delay)
+                                  .fadeIn(duration: 300.ms)
+                                  .scale(
+                                    begin: const Offset(0.5, 0.5),
+                                    end: const Offset(1, 1),
+                                    duration: 400.ms,
+                                    curve: Curves.elasticOut,
+                                  );
                             }),
                           );
                         },
@@ -506,7 +518,10 @@ class _OddOneOutGameState extends State<OddOneOutGame> {
                         color: AppColors.success,
                         shadeColor: AppColors.successShade,
                         onTap: () => _selectDifficulty(OddOneOutDifficulty.easy),
-                      ),
+                      )
+                          .animate()
+                          .fadeIn(delay: 100.ms, duration: 400.ms)
+                          .slideX(begin: -0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
                       const SizedBox(height: 20),
                       _DifficultyButton(
                         title: 'Hard',
@@ -515,7 +530,10 @@ class _OddOneOutGameState extends State<OddOneOutGame> {
                         color: AppColors.error,
                         shadeColor: AppColors.errorShade,
                         onTap: () => _selectDifficulty(OddOneOutDifficulty.hard),
-                      ),
+                      )
+                          .animate()
+                          .fadeIn(delay: 200.ms, duration: 400.ms)
+                          .slideX(begin: 0.2, end: 0, duration: 400.ms, curve: Curves.easeOut),
                     ],
                   ),
                 ),
@@ -755,8 +773,10 @@ class _ItemCard extends StatefulWidget {
   State<_ItemCard> createState() => _ItemCardState();
 }
 
-class _ItemCardState extends State<_ItemCard> {
+class _ItemCardState extends State<_ItemCard> with SingleTickerProviderStateMixin {
   bool _isPressed = false;
+  late AnimationController _idleController;
+  late Animation<double> _floatAnimation;
 
   Color get _baseColor {
     if (widget.isCorrect) return AppColors.success;
@@ -773,79 +793,154 @@ class _ItemCardState extends State<_ItemCard> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Gentle idle floating animation
+    _idleController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _floatAnimation = Tween<double>(begin: -2, end: 2).animate(
+      CurvedAnimation(parent: _idleController, curve: Curves.easeInOut),
+    );
+    _idleController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _idleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    Widget card = GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
         widget.onTap();
       },
       onTapCancel: () => setState(() => _isPressed = false),
-      child: SizedBox(
-        width: widget.size,
-        height: widget.size,
-        child: Stack(
-          children: [
-            // Shadow
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              top: 6,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _shadeColor,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-            ),
-            // Face
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 100),
-              left: 0,
-              right: 0,
-              top: _isPressed ? 6 : 0,
-              bottom: _isPressed ? 0 : 6,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: _baseColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: widget.isHinted
-                      ? Border.all(color: Colors.white, width: 4)
-                      : null,
-                  boxShadow: widget.isHinted
-                      ? [
-                          BoxShadow(
-                            color: AppColors.attention.withValues(alpha: 0.5),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.item.emoji,
-                        style: TextStyle(fontSize: widget.size * 0.4),
-                      ),
-                      if (widget.isCorrect || widget.isWrong)
-                        Icon(
-                          widget.isCorrect ? Icons.check_circle : Icons.cancel,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                    ],
+      child: AnimatedBuilder(
+        animation: _idleController,
+        builder: (context, child) {
+          // Only apply idle animation when not selected
+          final offset =
+              widget.isSelected ? 0.0 : _floatAnimation.value;
+          return Transform.translate(
+            offset: Offset(0, offset),
+            child: child,
+          );
+        },
+        child: SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Stack(
+            children: [
+              // Shadow
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                top: 6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _shadeColor,
+                    borderRadius: BorderRadius.circular(24),
                   ),
                 ),
               ),
-            ),
-          ],
+              // Face
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 100),
+                left: 0,
+                right: 0,
+                top: _isPressed ? 6 : 0,
+                bottom: _isPressed ? 0 : 6,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: _baseColor,
+                    borderRadius: BorderRadius.circular(24),
+                    border: widget.isHinted
+                        ? Border.all(color: Colors.white, width: 4)
+                        : null,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.item.emoji,
+                          style: TextStyle(fontSize: widget.size * 0.4),
+                        ),
+                        if (widget.isCorrect || widget.isWrong)
+                          Icon(
+                            widget.isCorrect ? Icons.check_circle : Icons.cancel,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+
+    // Apply state-specific animations
+    if (widget.isCorrect) {
+      card = card
+          .animate()
+          .scale(
+            begin: const Offset(1, 1),
+            end: const Offset(1.15, 1.15),
+            duration: 200.ms,
+            curve: Curves.easeOut,
+          )
+          .then()
+          .scale(
+            begin: const Offset(1.15, 1.15),
+            end: const Offset(1, 1),
+            duration: 300.ms,
+            curve: Curves.elasticOut,
+          )
+          .shimmer(
+            duration: 800.ms,
+            color: Colors.white.withValues(alpha: 0.4),
+          );
+    } else if (widget.isWrong) {
+      card = card
+          .animate()
+          .shake(hz: 5, rotation: 0.05, duration: 400.ms)
+          .tint(color: Colors.red.withValues(alpha: 0.2), duration: 200.ms);
+    } else if (widget.isHinted) {
+      card = card
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scale(
+            begin: const Offset(1, 1),
+            end: const Offset(1.05, 1.05),
+            duration: 600.ms,
+            curve: Curves.easeInOut,
+          )
+          .boxShadow(
+            begin: BoxShadow(
+              color: AppColors.attention.withValues(alpha: 0),
+              blurRadius: 0,
+              spreadRadius: 0,
+            ),
+            end: BoxShadow(
+              color: AppColors.attention.withValues(alpha: 0.7),
+              blurRadius: 25,
+              spreadRadius: 8,
+            ),
+            duration: 600.ms,
+          );
+    }
+
+    return card;
   }
 }

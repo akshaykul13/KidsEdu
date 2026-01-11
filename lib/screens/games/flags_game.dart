@@ -200,11 +200,11 @@ class _FlagsGameState extends State<FlagsGame> {
 
   Widget _buildLearnMode() {
     return GridView.builder(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 20,
-        crossAxisSpacing: 20,
+        crossAxisCount: 4,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
         childAspectRatio: 0.85,
       ),
       itemCount: CountryData.all.length,
@@ -222,71 +222,95 @@ class _FlagsGameState extends State<FlagsGame> {
   }
 
   Widget _buildQuizMode() {
-    return Column(
-      children: [
-        Text(
-          'Find the flag of:',
-          style: GoogleFonts.nunito(
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: () { HapticHelper.lightTap(); _speakPrompt(); },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryShade,
-                  offset: const Offset(0, 4),
-                  blurRadius: 0,
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: Column(
+        children: [
+          // Compact header
+          Text(
+            'Find the flag of:',
+            style: GoogleFonts.nunito(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () { HapticHelper.lightTap(); _speakPrompt(); },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryShade,
+                    offset: const Offset(0, 3),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.volume_up_rounded, color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    _targetCountry?.name ?? '',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 2x2 Grid that fills remaining space
+          Expanded(
+            child: Column(
               children: [
-                const Icon(Icons.volume_up_rounded, color: Colors.white, size: 36),
-                const SizedBox(width: 16),
-                Text(
-                  _targetCountry?.name ?? '',
-                  style: GoogleFonts.nunito(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildQuizFlagCard(0)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildQuizFlagCard(1)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildQuizFlagCard(2)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildQuizFlagCard(3)),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 32),
-        Expanded(
-          child: Center(
-            child: Wrap(
-              spacing: 24,
-              runSpacing: 24,
-              alignment: WrapAlignment.center,
-              children: _displayedFlags.map((country) {
-                final isCorrect = _showSuccess && country.code == _targetCountry?.code;
-                final isWrong = country.code == _wrongTapped;
+        ],
+      ),
+    );
+  }
 
-                return _FlagCard(
-                  country: country,
-                  isCorrect: isCorrect,
-                  isWrong: isWrong,
-                  onTap: () => _onFlagTap(country),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
+  Widget _buildQuizFlagCard(int index) {
+    if (index >= _displayedFlags.length) return const SizedBox();
+    final country = _displayedFlags[index];
+    final isCorrect = _showSuccess && country.code == _targetCountry?.code;
+    final isWrong = country.code == _wrongTapped;
+
+    return _FlagCard(
+      country: country,
+      isCorrect: isCorrect,
+      isWrong: isWrong,
+      onTap: () => _onFlagTap(country),
     );
   }
 
@@ -436,87 +460,78 @@ class _LearnFlagCardState extends State<_LearnFlagCard> {
         widget.onTap();
       },
       onTapCancel: () => setState(() => _isPressed = false),
-      child: Stack(
-        children: [
-          // Shadow
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            top: 6,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.neutralShade,
-                borderRadius: BorderRadius.circular(20),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               ),
-            ),
+            ],
           ),
-          // Face
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOut,
-            left: 0,
-            right: 0,
-            top: _isPressed ? 6 : 0,
-            bottom: _isPressed ? 0 : 6,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.neutral, width: 3),
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FA),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFE9ECEF),
+                      width: 1,
+                    ),
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final flagSize = (constraints.maxWidth * 0.75).clamp(50.0, 120.0);
+                      return Center(
+                        child: FlagWidget(
+                          countryCode: widget.country.code,
+                          size: flagSize,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F0F0),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFE0E0E0),
-                        width: 1,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.volume_up_rounded,
+                      color: AppColors.primary,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        widget.country.name,
+                        style: GoogleFonts.nunito(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    padding: const EdgeInsets.all(6),
-                    child: FlagWidget(
-                      countryCode: widget.country.code,
-                      size: 50,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.volume_up_rounded,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            widget.country.name,
-                            style: GoogleFonts.nunito(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -545,18 +560,15 @@ class _FlagCardState extends State<_FlagCard> {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor = AppColors.surface;
-    Color borderColor = AppColors.neutral;
-    Color shadeColor = AppColors.neutralShade;
+    Color bgColor = Colors.white;
+    Color borderColor = const Color(0xFFDEE2E6);
 
     if (widget.isCorrect) {
-      bgColor = AppColors.success.withValues(alpha: 0.1);
+      bgColor = AppColors.success.withValues(alpha: 0.15);
       borderColor = AppColors.success;
-      shadeColor = AppColors.successShade;
     } else if (widget.isWrong) {
-      bgColor = AppColors.error.withValues(alpha: 0.1);
+      bgColor = AppColors.error.withValues(alpha: 0.15);
       borderColor = AppColors.error;
-      shadeColor = AppColors.errorShade;
     }
 
     return GestureDetector(
@@ -566,61 +578,44 @@ class _FlagCardState extends State<_FlagCard> {
         widget.onTap();
       },
       onTapCancel: () => setState(() => _isPressed = false),
-      child: SizedBox(
-        width: 220,
-        height: 170,
-        child: Stack(
-          children: [
-            // Shadow
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              top: 8,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: shadeColor,
-                  borderRadius: BorderRadius.circular(24),
-                ),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFE9ECEF),
+                width: 1,
               ),
             ),
-            // Face
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 100),
-              curve: Curves.easeOut,
-              left: 0,
-              right: 0,
-              top: _isPressed ? 8 : 0,
-              bottom: _isPressed ? 0 : 8,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: borderColor, width: 4),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F0F0),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFE0E0E0),
-                          width: 1,
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: FlagWidget(
-                        countryCode: widget.country.code,
-                        size: 90,
-                      ),
-                    ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final flagSize = (constraints.maxWidth * 0.7).clamp(60.0, 180.0);
+                return Center(
+                  child: FlagWidget(
+                    countryCode: widget.country.code,
+                    size: flagSize,
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ],
+          ),
         ),
       ),
     );

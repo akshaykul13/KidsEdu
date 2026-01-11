@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:async';
 import 'dart:math';
 import '../../core/theme/app_theme.dart';
@@ -8,7 +9,7 @@ import '../../core/utils/audio_helper.dart';
 import '../../core/utils/haptic_helper.dart';
 import '../../widgets/navigation_buttons.dart';
 import '../../widgets/celebration_overlay.dart';
-import '../../core/utils/illustrated_icons.dart';
+import '../../core/utils/game_icon.dart';
 
 /// Difficulty levels for the memory game
 enum MemoryDifficulty {
@@ -515,10 +516,20 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
                 ),
                 itemCount: _cards.length,
                 itemBuilder: (context, index) {
+                  // Staggered entrance animation
+                  final delay = Duration(milliseconds: 30 * (index % columns) + 50 * (index ~/ columns));
                   return _MemoryCardWidget(
                     card: _cards[index],
                     onTap: () => _onCardTap(index),
-                  );
+                  )
+                      .animate(delay: delay)
+                      .fadeIn(duration: 300.ms)
+                      .scale(
+                        begin: const Offset(0.5, 0.5),
+                        end: const Offset(1, 1),
+                        duration: 400.ms,
+                        curve: Curves.elasticOut,
+                      );
                 },
               ),
             ),
@@ -781,13 +792,17 @@ class _MemoryCardWidgetState extends State<_MemoryCardWidget>
 
   Widget _buildFront() {
     final isMatched = widget.card.isMatched;
-    return Transform(
+    Widget content = Transform(
       alignment: Alignment.center,
       transform: Matrix4.identity()..rotateY(3.14159),
       child: Container(
         decoration: BoxDecoration(
-          color: isMatched ? AppColors.success : widget.card.color,
+          color: isMatched ? AppColors.success : Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isMatched ? AppColors.success : widget.card.color,
+            width: 3,
+          ),
           boxShadow: [
             BoxShadow(
               color: isMatched
@@ -805,17 +820,29 @@ class _MemoryCardWidgetState extends State<_MemoryCardWidget>
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final iconSize = constraints.maxWidth * 0.6;
+            final iconSize = constraints.maxWidth * 0.75;
             return Center(
-              child: IllustratedIcon(
+              child: GameIcon(
                 iconId: widget.card.iconId,
-                size: iconSize.clamp(24.0, 60.0),
+                size: iconSize.clamp(35.0, 90.0),
               ),
             );
           },
         ),
       ),
     );
+
+    // Add shimmer effect for matched cards
+    if (isMatched) {
+      content = content
+          .animate(onPlay: (c) => c.repeat())
+          .shimmer(
+            duration: 2000.ms,
+            color: Colors.white.withValues(alpha: 0.3),
+          );
+    }
+
+    return content;
   }
 }
 

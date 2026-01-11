@@ -204,11 +204,14 @@ SizedBox(
 
 ---
 
-## 4. Custom Graphics
+## 4. Custom Graphics & Animation System
 
-### A. Illustrated Icons
+### A. Game Icons (Rich SVG Illustrations)
 
-Custom vector icons drawn with `CustomPaint` for consistent visual style.
+Custom SVG vector icons with detailed cartoon-style illustrations. Each icon features:
+- Cute expressions with eyes and highlights
+- Gradient fills and shadows
+- Consistent visual style across all icons
 
 **Available Icons (20):**
 | Animals | Nature/Shapes |
@@ -220,19 +223,87 @@ Custom vector icons drawn with `CustomPaint` for consistent visual style.
 
 **Usage:**
 ```dart
-IllustratedIcon(
+import '../../core/utils/game_icon.dart';
+
+GameIcon(
   iconId: 'cat',
   size: 60,
-  backgroundColor: Colors.orange.withOpacity(0.1),
 )
 ```
 
 **Implementation:**
-- Each icon is drawn programmatically using `CustomPaint`
-- Primary and accent colors for each icon
+- Each icon is a complete inline SVG with viewBox
+- Uses `SvgPicture.string()` for rendering
 - Fallback to emoji if icon not found
+- Scales cleanly to any size
 
-### B. Flag Widget
+### B. Animated Game Icons
+
+Wrapper component that adds engaging micro-animations to game icons.
+
+**Animation States:**
+| State | Animation | Use Case |
+|-------|-----------|----------|
+| `idle` | Gentle floating + breathing | Default state |
+| `tapped` | Quick scale-down bounce | User tap feedback |
+| `correct` | Scale pop + wiggle + shimmer | Correct answer |
+| `wrong` | Shake + red tint | Wrong answer |
+| `hint` | Pulsing glow + scale | Hint animation |
+
+**Usage:**
+```dart
+import '../../core/utils/animated_game_icon.dart';
+
+AnimatedGameIcon(
+  iconId: 'star',
+  size: 60,
+  state: GameIconState.idle,
+  enableIdleAnimation: true,
+  entranceDelay: Duration(milliseconds: 100),
+  onAnimationComplete: () => print('Animation done'),
+)
+```
+
+### C. Animated Game Card (Memory Games)
+
+Card component with 3D flip animation for memory-style games.
+
+**Features:**
+- Smooth 3D flip with perspective transform
+- Press-down effect on tap
+- State-based effects (matched shimmer, wrong shake, hint glow)
+- Back face with "?" placeholder
+
+**Usage:**
+```dart
+AnimatedGameCard(
+  isFlipped: true,
+  isMatched: false,
+  isWrong: false,
+  showHint: false,
+  cardColor: Color(0xFFE5E5E5),
+  shadeColor: Color(0xFFAFB4BD),
+  width: 100,
+  height: 100,
+  onTap: () => handleTap(),
+  child: GameIcon(iconId: 'cat', size: 50),
+)
+```
+
+### D. Celebration Particles
+
+Particle burst effect for celebrating correct answers.
+
+**Usage:**
+```dart
+CelebrationParticles(
+  isPlaying: showParticles,
+  color: Colors.amber,
+  particleCount: 12,
+)
+```
+
+### E. Flag Widget
 
 SVG-based country flags with emoji fallback.
 
@@ -355,13 +426,90 @@ To build games that get harder without overwhelming the child, use these **Progr
 
 A game feels "premium" when it reacts to the user. These micro-interactions are essential.
 
+### Flutter Animate Integration
+
+We use `flutter_animate` for declarative, chainable animations.
+
+**Package:** `flutter_animate: ^4.5.0`
+
+**Common Patterns:**
+```dart
+import 'package:flutter_animate/flutter_animate.dart';
+
+// Staggered entrance animation for grid items
+GridView.builder(
+  itemBuilder: (context, index) {
+    final delay = Duration(milliseconds: 30 * (index % columns) + 50 * (index ~/ columns));
+    return MyWidget()
+      .animate(delay: delay)
+      .fadeIn(duration: 300.ms)
+      .scale(
+        begin: const Offset(0.5, 0.5),
+        end: const Offset(1, 1),
+        duration: 400.ms,
+        curve: Curves.elasticOut,
+      );
+  },
+)
+
+// Correct answer celebration
+widget
+  .animate()
+  .scale(begin: Offset(1, 1), end: Offset(1.15, 1.15), duration: 200.ms)
+  .then()
+  .scale(begin: Offset(1.15, 1.15), end: Offset(1, 1), duration: 300.ms, curve: Curves.elasticOut)
+  .shimmer(duration: 800.ms, color: Colors.white.withOpacity(0.4))
+
+// Wrong answer shake
+widget
+  .animate()
+  .shake(hz: 5, rotation: 0.05, duration: 400.ms)
+  .tint(color: Colors.red.withOpacity(0.2), duration: 200.ms)
+
+// Hint pulsing glow
+widget
+  .animate(onPlay: (c) => c.repeat(reverse: true))
+  .scale(begin: Offset(1, 1), end: Offset(1.05, 1.05), duration: 600.ms)
+  .boxShadow(
+    begin: BoxShadow(color: Colors.amber.withOpacity(0), blurRadius: 0),
+    end: BoxShadow(color: Colors.amber.withOpacity(0.7), blurRadius: 25, spreadRadius: 8),
+    duration: 600.ms,
+  )
+
+// Matched card shimmer
+widget
+  .animate(onPlay: (c) => c.repeat())
+  .shimmer(duration: 2000.ms, color: Colors.white.withOpacity(0.3))
+```
+
 ### The "Pop" Animation
 
 When a correct answer is chosen:
-1. Object scales to **1.2x**
+1. Object scales to **1.15-1.3x**
 2. Returns to **1.0x**
-3. Total duration: **200ms**
+3. Total duration: **400-500ms**
 4. Easing: `Curves.elasticOut`
+
+### Idle Floating Animation
+
+Keeps icons feeling alive when not interacted with:
+```dart
+// Manual animation controller approach
+_idleController = AnimationController(
+  duration: Duration(milliseconds: 2000 + random.nextInt(1000)),
+  vsync: this,
+);
+_floatAnimation = Tween<double>(begin: -3, end: 3).animate(
+  CurvedAnimation(parent: _idleController, curve: Curves.easeInOut),
+);
+_idleController.repeat(reverse: true);
+
+// Apply in build
+Transform.translate(
+  offset: Offset(0, _floatAnimation.value),
+  child: child,
+)
+```
 
 ### Haptic Feedback
 
@@ -427,16 +575,21 @@ await _tts.setIosAudioCategory(
 
 ## 10. Animation Timing Reference
 
-| Animation Type | Duration | Easing |
-|----------------|----------|--------|
-| Button press (3D effect) | 100ms | `easeOut` |
-| Pop effect (correct answer) | 200ms | `elasticOut` |
-| Progress bar fill | 300ms | `easeInOut` |
-| Confetti burst | 2s | Linear |
-| Screen transition | 300ms | `easeInOut` |
-| Hint pulse | 500ms | Repeating |
-| Error shake | 300ms | `easeInOut` |
-| Card flip | 300ms | `easeInOut` |
+| Animation Type | Duration | Easing | Library |
+|----------------|----------|--------|---------|
+| Button press (3D effect) | 100ms | `easeOut` | Manual |
+| Pop effect (correct) | 400-500ms | `elasticOut` | flutter_animate |
+| Progress bar fill | 300ms | `easeInOut` | Manual |
+| Confetti burst | 2s | Linear | confetti |
+| Screen transition | 300ms | `easeInOut` | Navigator |
+| Hint pulse | 600ms | Repeating | flutter_animate |
+| Error shake | 400ms | flutter_animate | flutter_animate |
+| Card flip | 400ms | `easeInOutBack` | Manual |
+| Idle float | 2000-3000ms | `easeInOut` | Manual |
+| Staggered entrance | 300-400ms | `elasticOut` | flutter_animate |
+| Matched shimmer | 800-2000ms | Linear | flutter_animate |
+| Wrong tint | 200ms | Linear | flutter_animate |
+| Celebration particles | 800ms | `easeOut` | Manual |
 
 ---
 
@@ -466,26 +619,27 @@ Before shipping a new game, verify:
 lib/
 ├── core/
 │   ├── theme/
-│   │   └── app_theme.dart         # 3D Color palette, typography
+│   │   └── app_theme.dart           # 3D Color palette, typography
 │   ├── constants/
-│   │   └── game_data.dart         # Game definitions
+│   │   └── game_data.dart           # Game definitions
 │   └── utils/
-│       ├── audio_helper.dart      # TTS + sound effects
-│       ├── haptic_helper.dart     # Duolingo-style haptics
-│       ├── settings_service.dart  # App settings
-│       ├── flag_widget.dart       # SVG flag renderer
-│       └── illustrated_icons.dart # Custom vector icons
+│       ├── audio_helper.dart        # TTS + sound effects
+│       ├── haptic_helper.dart       # Duolingo-style haptics
+│       ├── settings_service.dart    # App settings
+│       ├── flag_widget.dart         # SVG flag renderer
+│       ├── game_icon.dart           # Rich SVG icon illustrations
+│       └── animated_game_icon.dart  # Animated icon wrapper + game card
 ├── widgets/
-│   ├── duo_button.dart            # 3D press button
-│   ├── duo_progress_bar.dart      # Progress bar with shine
-│   ├── game_app_bar.dart          # Lesson top bar
-│   ├── answer_tile.dart           # 3D answer button
-│   ├── celebration_overlay.dart   # Confetti + success
-│   ├── navigation_buttons.dart    # Back/Exit buttons
-│   ├── path_node.dart             # Home screen path nodes
-│   └── success_drawer.dart        # Success animations
+│   ├── duo_button.dart              # 3D press button
+│   ├── duo_progress_bar.dart        # Progress bar with shine
+│   ├── game_app_bar.dart            # Lesson top bar
+│   ├── answer_tile.dart             # 3D answer button
+│   ├── celebration_overlay.dart     # Confetti + success
+│   ├── navigation_buttons.dart      # Back/Exit buttons
+│   ├── path_node.dart               # Home screen path nodes
+│   └── success_drawer.dart          # Success animations
 ├── screens/
-│   ├── home_screen.dart           # Category navigation
+│   ├── home_screen.dart             # Category navigation
 │   └── games/
-│       └── [game_name]_game.dart  # Individual games
+│       └── [game_name]_game.dart    # Individual games
 ```
